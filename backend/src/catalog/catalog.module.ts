@@ -1,0 +1,4 @@
+import { Module } from '@nestjs/common'; import { SequelizeModule } from '@nestjs/sequelize';
+import { Category } from './models/category.model'; import { Brand } from './models/brand.model'; import { AttributeGroup } from './models/attribute-group.model'; import { AttributeValue } from './models/attribute-value.model'; import { Product } from './models/product.model'; import { ProductVariant } from './models/product-variant.model';
+import { CatalogService } from './catalog.service'; import { CatalogController } from './catalog.controller'; import { InventoryModule } from '../inventory/inventory.module';
+@Module({imports:[SequelizeModule.forFeature([Category,Brand,AttributeGroup,AttributeValue,Product,ProductVariant]),InventoryModule],providers:[CatalogService],controllers:[CatalogController],exports:[CatalogService]}) export class CatalogModule {}
