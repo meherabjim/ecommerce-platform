@@ -409,6 +409,66 @@ export default function OrderDetails() {
           </div>
         </section>
 
+        <div className="mt-6 flex flex-wrap gap-3">
+
+          {['CONFIRMED','PROCESSING'].includes(order.status) && (
+            <button
+              type="button"
+              onClick={async()=>{
+                if(!confirm('Cancel this order?')) return;
+
+                try{
+                  await api.post(`/me/orders/${order.id}/cancel`);
+                  await load();
+                }catch(error:any){
+                  alert(
+                    error?.response?.data?.message ||
+                    'Could not cancel order.'
+                  );
+                }
+              }}
+              className="rounded-xl border border-red-200 px-4 py-3 text-sm font-bold text-red-600"
+            >
+              Cancel order
+            </button>
+          )}
+
+
+          {order.status === 'DELIVERED' && (
+            <button
+              type="button"
+              onClick={async()=>{
+                const reason =
+                  prompt(
+                    'Why do you want to return this order?'
+                  );
+
+                if(!reason) return;
+
+                try{
+                  await api.post(
+                    `/orders/${order.id}/return`,
+                    {reason}
+                  );
+
+                  alert(
+                    'Return request submitted.'
+                  );
+                }catch(error:any){
+                  alert(
+                    error?.response?.data?.message ||
+                    'Could not submit return request.'
+                  );
+                }
+              }}
+              className="rounded-xl border px-4 py-3 text-sm font-bold"
+            >
+              Request return
+            </button>
+          )}
+
+        </div>
+
         <OrderTrackingPanel order={order} />
 
         {/* ==================================================
@@ -441,4 +501,5 @@ export default function OrderDetails() {
     </main>
   );
 }
+
 

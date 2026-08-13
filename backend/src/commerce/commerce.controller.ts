@@ -10,6 +10,15 @@ export class CommerceController{
  @Post('checkout')@UseGuards(JwtAuthGuard)checkout(@CurrentUser()u:any,@Body()d:CheckoutDto){return this.s.checkout(u.id,d)}
  @Get('me/orders')@UseGuards(JwtAuthGuard)myOrders(@CurrentUser()u:any){return this.s.ordersForUser(u.id)}
  @Get('me/orders/:id')@UseGuards(JwtAuthGuard)myOrder(@CurrentUser()u:any,@Param('id')id:string){return this.s.orderDetails(id,u.id,false)}
+ @Post('me/orders/:id/cancel')
+ @UseGuards(JwtAuthGuard)
+ cancelMyOrder(
+   @CurrentUser()u:any,
+   @Param('id')id:string
+ ){
+   return this.s.cancelByCustomer(id,u.id)
+ }
+
  @Get('admin/orders')@UseGuards(JwtAuthGuard,RolesGuard)@Roles(UserRole.ADMIN)orders(){return this.s.allOrders()}
  @Get('admin/orders/:id')
   @UseGuards(JwtAuthGuard,RolesGuard)
@@ -23,4 +32,5 @@ export class CommerceController{
  @Get('delivery/orders')@UseGuards(JwtAuthGuard,RolesGuard)@Roles(UserRole.DELIVERY_AGENT)deliveryOrders(@CurrentUser()u:any){return this.s.deliveryOrders(u.id)}
  @Patch('delivery/orders/:id/status')@UseGuards(JwtAuthGuard,RolesGuard)@Roles(UserRole.DELIVERY_AGENT)deliveryStatus(@CurrentUser()u:any,@Param('id')id:string,@Body()d:DeliveryStatusDto){return this.s.updateDeliveryStatus(id,u.id,d.status,d.note,d.failureReason,d.codCollected)}
 }
+
 

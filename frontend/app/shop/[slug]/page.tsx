@@ -48,7 +48,7 @@ export default function ProductDetails(){
           <div className="flex justify-between"><p className="text-3xl font-black">BDT {v.salePrice||v.price}</p><p className="text-sm font-bold text-slate-600">{v.stock} in stock</p></div>
           <div className="mt-5 flex gap-3">
             <input type="number" min="1" max={Math.max(1,v.stock)} value={qty} onChange={e=>setQty(Math.min(v.stock,Math.max(1,Number(e.target.value)||1)))} className="w-24 rounded-xl border px-3"/>
-            <button onClick={add} disabled={v.stock<=0} className="flex-1 rounded-xl bg-slate-950 py-3.5 font-bold text-white disabled:opacity-40">Add to cart</button>
+            <button type="button" onClick={async()=>{try{await api.post(`/wishlist/${p.id}`);alert('Added to wishlist.')}catch(e:any){alert(e?.response?.data?.message||'Please login first.')}}} className="mb-3 w-full rounded-xl border border-slate-950 px-5 py-3 font-bold">♡ Add to wishlist</button><button onClick={add} disabled={v.stock<=0} className="flex-1 rounded-xl bg-slate-950 py-3.5 font-bold text-white disabled:opacity-40">Add to cart</button>
           </div>
           {msg&&<p className="mt-3 text-sm font-semibold">{msg}</p>}
           <p className="mt-4 font-mono text-xs text-slate-500">SKU {v.sku} | Barcode {v.barcode}</p>
@@ -69,6 +69,7 @@ export default function ProductDetails(){
     </section>
   </main>
 }
+
 
 
 

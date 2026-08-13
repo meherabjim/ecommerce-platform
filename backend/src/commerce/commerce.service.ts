@@ -14,6 +14,8 @@ import { UsersService } from '../users/users.service';
 import { UserRole } from '../common/enums/user-role.enum';
 import { AddCartItemDto, UpdateCartItemDto } from './dto/cart.dto';
 import { CheckoutDto } from './dto/checkout.dto';
+import { CustomerService } from '../customer/customer.service';
+import { NotificationType } from '../customer/models/notification.model';
 
 @Injectable()
 export class CommerceService {
@@ -28,6 +30,7 @@ export class CommerceService {
     private inventory:InventoryService,
     private promotions:PromotionsService,
     private users:UsersService,
+    private customer:CustomerService,
     private sequelize:Sequelize
   ){}
 
@@ -48,14 +51,14 @@ export class CommerceService {
     const cart=await this.getCart(userId);if(!cart.items.length)throw new BadRequestException('Cart is empty.');
     let delivery:any=dto;
     if(dto.addressId){const a=await this.users.addressById(userId,dto.addressId);delivery={...dto,customerName:a.recipientName,phone:a.phone,addressLine:a.addressLine,city:a.district,division:a.division,district:a.district,area:a.area,landmark:a.landmark,postalCode:a.postalCode,addressLabel:a.type,latitude:a.latitude===null?undefined:Number(a.latitude),longitude:a.longitude===null?undefined:Number(a.longitude),locationSource:a.locationSource}}
-    const promo=await this.promotions.calculate(dto.couponCode,cart.subtotal);const shipping=cart.subtotal>=3000?0:120;const total=Math.max(0,cart.subtotal+shipping-promo.discount);
+    const promo=await this.promotions.calculate(dto.couponCode,cart.subtotal);const shippingQuote=await this.customer.shippingQuote(delivery.district||delivery.city,delivery.area,cart.subtotal);const shipping=shippingQuote.charge;const total=Math.max(0,cart.subtotal+shipping-promo.discount);
     return this.sequelize.transaction(async t=>{
       for(const i of cart.items as any[]) await this.inventory.reserve(i.variantId,i.quantity,t);
       const order=await this.orderModel.create({orderNumber:this.orderNumber(),userId,status:OrderStatus.CONFIRMED,paymentMode:dto.paymentMode,paymentStatus:dto.paymentMode===PaymentMode.COD?PaymentStatus.UNPAID:PaymentStatus.PENDING,subtotal:cart.subtotal,shippingCharge:shipping,discount:promo.discount,total,customerName:delivery.customerName,phone:delivery.phone,email:dto.email||null,addressLine:delivery.addressLine,city:delivery.city,division:delivery.division||null,district:delivery.district||delivery.city,area:delivery.area||null,landmark:delivery.landmark||null,postalCode:delivery.postalCode||null,addressLabel:delivery.addressLabel||null,deliveryLatitude:delivery.latitude??null,deliveryLongitude:delivery.longitude??null,locationSource:delivery.locationSource||null,notes:dto.notes||null} as any,{transaction:t});
       for(const i of cart.items as any[]) await this.orderItemModel.create({orderId:order.id,variantId:i.variantId,productName:i.productName,sku:i.sku,barcode:i.barcode,attributes:i.attributes,unitPrice:i.unitPrice,quantity:i.quantity,lineTotal:i.lineTotal} as any,{transaction:t});
       if(promo.promotion)await this.promotions.markUsed(promo.promotion.id,t);
       await this.historyModel.create({orderId:order.id,previousStatus:null,newStatus:OrderStatus.CONFIRMED,actorId:userId,note:promo.promotion?`Order placed with coupon ${promo.promotion.code}`:'Order placed by customer'} as any,{transaction:t});
-      const c=await this.cartFor(userId);await this.cartItemModel.destroy({where:{cartId:c.id},transaction:t});return this.orderDetails(order.id,userId,false,t)
+      const c=await this.cartFor(userId);await this.cartItemModel.destroy({where:{cartId:c.id},transaction:t});await this.customer.createNotification(userId,NotificationType.ORDER,'Order confirmed',`Your order ${order.orderNumber} has been confirmed.`,order.id);return this.orderDetails(order.id,userId,false,t)
     })
   }
 
@@ -83,6 +86,54 @@ export class CommerceService {
     if(failureReason)order.deliveryFailureReason=failureReason;if(codCollected!==undefined)order.codCollected=String(codCollected);await order.save();return this.updateStatus(orderId,status,agentId,note||failureReason)
   }
 
+
+  async cancelByCustomer(
+    orderId:string,
+    userId:string,
+  ){
+    const order =
+      await this.orderModel.findOne({
+        where:{
+          id:orderId,
+          userId,
+        },
+      });
+
+    if(!order){
+      throw new NotFoundException(
+        'Order not found.',
+      );
+    }
+
+    if(
+      ![
+        OrderStatus.CONFIRMED,
+        OrderStatus.PROCESSING,
+      ].includes(order.status)
+    ){
+      throw new BadRequestException(
+        'This order can no longer be cancelled by the customer.',
+      );
+    }
+
+    const result =
+      await this.updateStatus(
+        order.id,
+        OrderStatus.CANCELLED,
+        userId,
+        'Cancelled by customer',
+      );
+
+    await this.customer.createNotification(
+      userId,
+      NotificationType.ORDER,
+      'Order cancelled',
+      `Order ${order.orderNumber} was cancelled.`,
+      order.id,
+    );
+
+    return result;
+  }
   async updateStatus(orderId:string,status:OrderStatus,actorId:string,note?:string){
     return this.sequelize.transaction(async t=>{
       const order=await this.orderModel.findByPk(orderId,{transaction:t,lock:t.LOCK.UPDATE});if(!order)throw new NotFoundException('Order not found.');const previous=order.status;if(previous===status)return this.orderDetails(orderId,undefined,true,t);
@@ -101,9 +152,10 @@ export class CommerceService {
       const items=await this.orderItemModel.findAll({where:{orderId},transaction:t});
       if(status===OrderStatus.CANCELLED)for(const i of items)await this.inventory.release(i.variantId,i.quantity,t);
       if(status===OrderStatus.DELIVERED){for(const i of items)await this.inventory.consumeReserved(i.variantId,i.quantity,t);if(order.paymentMode===PaymentMode.COD)order.paymentStatus=PaymentStatus.PAID}
-      order.status=status;await order.save({transaction:t});await this.historyModel.create({orderId,previousStatus:previous,newStatus:status,actorId,note:note||null} as any,{transaction:t});return this.orderDetails(orderId,undefined,true,t)
+      order.status=status;await order.save({transaction:t});await this.historyModel.create({orderId,previousStatus:previous,newStatus:status,actorId,note:note||null} as any,{transaction:t});await this.customer.createNotification(order.userId,NotificationType.DELIVERY,'Order status updated',`Order ${order.orderNumber} is now ${status.replaceAll('_',' ')}.`,order.id);return this.orderDetails(orderId,undefined,true,t)
     })
   }
 }
+
 
 

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule,ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 
@@ -12,6 +12,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { CommerceModule } from './commerce/commerce.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { CustomerModule } from './customer/customer.module';
 
 import { Category } from './catalog/models/category.model';
 import { Brand } from './catalog/models/brand.model';
@@ -32,6 +33,10 @@ import { OrderStatusHistory } from './commerce/models/order-status-history.model
 
 import { Promotion } from './promotions/models/promotion.model';
 import { Review } from './reviews/models/review.model';
+import { Wishlist } from './customer/models/wishlist.model';
+import { Notification } from './customer/models/notification.model';
+import { ReturnRequest } from './customer/models/return-request.model';
+import { ShippingZone } from './customer/models/shipping-zone.model';
 
 @Module({
   imports:[
@@ -50,7 +55,7 @@ import { Review } from './reviews/models/review.model';
           User,Address,Category,Brand,AttributeGroup,AttributeValue,Product,ProductVariant,
           Warehouse,Inventory,InventoryMovement,
           Cart,CartItem,Order,OrderItem,OrderStatusHistory,
-          Promotion,Review
+          Promotion,Review,Wishlist,Notification,ReturnRequest,ShippingZone
         ],
         autoLoadModels:true,
         synchronize:c.get<string>('DB_SYNC','true')==='true',
@@ -63,7 +68,10 @@ import { Review } from './reviews/models/review.model';
     CatalogModule,
     PromotionsModule,
     CommerceModule,
-    ReviewsModule
+    ReviewsModule,
+    CustomerModule
   ]
 })
 export class AppModule {}
+
+

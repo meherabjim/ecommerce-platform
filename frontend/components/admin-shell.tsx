@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import Link from 'next/link';
 import { usePathname,useRouter } from 'next/navigation';
 import { clearAuth } from '@/lib/auth';
@@ -12,6 +12,7 @@ const links=[
   {href:'/admin/delivery',label:'Delivery'},
   {href:'/admin/promotions',label:'Promotions'},
   {href:'/admin/reviews',label:'Reviews'},
+  {href:'/admin/returns',label:'Returns'},
 ];
 
 export default function AdminShell({children}:{children:React.ReactNode}){
@@ -39,4 +40,5 @@ export default function AdminShell({children}:{children:React.ReactNode}){
     </main>
   </div>
 }
+
 

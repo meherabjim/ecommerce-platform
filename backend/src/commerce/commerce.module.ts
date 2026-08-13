@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Cart } from './models/cart.model';
 import { CartItem } from './models/cart-item.model';
@@ -12,5 +12,7 @@ import { PromotionsModule } from '../promotions/promotions.module';
 import { UsersModule } from '../users/users.module';
 import { CommerceService } from './commerce.service';
 import { CommerceController } from './commerce.controller';
-@Module({imports:[SequelizeModule.forFeature([Cart,CartItem,Order,OrderItem,OrderStatusHistory,ProductVariant,Product]),InventoryModule,PromotionsModule,UsersModule],providers:[CommerceService],controllers:[CommerceController]})
+import { CustomerModule } from '../customer/customer.module';
+@Module({imports:[SequelizeModule.forFeature([Cart,CartItem,Order,OrderItem,OrderStatusHistory,ProductVariant,Product]),InventoryModule,PromotionsModule,UsersModule,CustomerModule],providers:[CommerceService],controllers:[CommerceController]})
 export class CommerceModule {}
+

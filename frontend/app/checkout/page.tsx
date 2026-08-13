@@ -45,6 +45,11 @@ export default function CheckoutPage() {
   const [busy,setBusy] =
     useState(false);
 
+  const [shippingQuote,setShippingQuote] =
+    useState<any>({
+      charge:120,
+    });
+
 
   const [form,setForm] =
     useState<any>({
@@ -390,6 +395,45 @@ export default function CheckoutPage() {
   }
 
 
+  useEffect(() => {
+
+    if (
+      !cart ||
+      !form.district
+    ) return;
+
+    api.get(
+      '/shipping/quote',
+      {
+        params:{
+          district:form.district,
+          area:form.area || '',
+          subtotal:cart.subtotal,
+        },
+      },
+    )
+      .then(
+        response =>
+          setShippingQuote(
+            response.data,
+          ),
+      )
+      .catch(() =>
+        setShippingQuote({
+          charge:
+            cart.subtotal >= 3000
+              ? 0
+              : 120,
+        })
+      );
+
+  },[
+    cart,
+    form.district,
+    form.area,
+  ]);
+
+
   if (!cart) {
 
     return (
@@ -401,9 +445,9 @@ export default function CheckoutPage() {
 
 
   const shipping =
-    cart.subtotal >= 3000
-      ? 0
-      : 120;
+    Number(
+      shippingQuote?.charge ?? 120
+    );
 
 
   return (
@@ -869,3 +913,5 @@ export default function CheckoutPage() {
     </main>
   );
 }
+
+
