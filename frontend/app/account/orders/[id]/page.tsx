@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '@/components/navbar';
+import OrderTrackingPanel from '@/components/order-tracking-panel';
 import { api } from '@/lib/api';
 
 type ReviewDraft = {
@@ -408,6 +409,8 @@ export default function OrderDetails() {
           </div>
         </section>
 
+        <OrderTrackingPanel order={order} />
+
         {/* ==================================================
             STATUS TIMELINE
         ================================================== */}
@@ -438,3 +441,4 @@ export default function OrderDetails() {
     </main>
   );
 }
+
