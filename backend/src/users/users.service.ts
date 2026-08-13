@@ -1,9 +1,9 @@
-import { ConflictException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+﻿import { ConflictException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { User } from './models/user.model';
-import { Address } from './models/address.model';
+import { Address, LocationSource } from './models/address.model';
 import { UserRole } from '../common/enums/user-role.enum';
 import { UserStatus } from '../common/enums/user-status.enum';
 import { AddressDto, CreateDeliveryAgentDto } from './dto/address.dto';
@@ -48,9 +48,11 @@ export class UsersService implements OnModuleInit {
   async createAddress(userId:string,dto:AddressDto){
     const count=await this.addressModel.count({where:{userId}});const makeDefault=dto.isDefault||count===0;
     if(makeDefault) await this.addressModel.update({isDefault:false},{where:{userId}});
-    return this.addressModel.create({...dto,userId,isDefault:makeDefault,landmark:dto.landmark||null,postalCode:dto.postalCode||null} as any);
+    return this.addressModel.create({...dto,userId,isDefault:makeDefault,landmark:dto.landmark||null,postalCode:dto.postalCode||null,latitude:dto.latitude===undefined?null:String(dto.latitude),longitude:dto.longitude===undefined?null:String(dto.longitude),locationSource:dto.locationSource||LocationSource.NONE} as any);
   }
-  async updateAddress(userId:string,id:string,dto:AddressDto){const a=await this.addressById(userId,id);if(dto.isDefault)await this.addressModel.update({isDefault:false},{where:{userId}});await a.update({...dto,landmark:dto.landmark||null,postalCode:dto.postalCode||null});return a}
+  async updateAddress(userId:string,id:string,dto:AddressDto){const a=await this.addressById(userId,id);if(dto.isDefault)await this.addressModel.update({isDefault:false},{where:{userId}});await a.update({...dto,landmark:dto.landmark||null,postalCode:dto.postalCode||null,latitude:dto.latitude===undefined?null:String(dto.latitude),longitude:dto.longitude===undefined?null:String(dto.longitude),locationSource:dto.locationSource||LocationSource.NONE} as any);return a}
   async deleteAddress(userId:string,id:string){const a=await this.addressById(userId,id);const wasDefault=a.isDefault;await a.destroy();if(wasDefault){const next=await this.addressModel.findOne({where:{userId},order:[['createdAt','DESC']]});if(next){next.isDefault=true;await next.save()}}return {deleted:true}}
   async setDefaultAddress(userId:string,id:string){const a=await this.addressById(userId,id);await this.addressModel.update({isDefault:false},{where:{userId}});a.isDefault=true;await a.save();return a}
 }
+
+

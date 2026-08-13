@@ -1,4 +1,4 @@
-import { Column, DataType, Default, Model, PrimaryKey, Table, Unique } from 'sequelize-typescript';
+﻿import { Column, DataType, Default, Model, PrimaryKey, Table, Unique } from 'sequelize-typescript';
 
 export enum OrderStatus {
   PENDING='PENDING', CONFIRMED='CONFIRMED', PROCESSING='PROCESSING', PACKED='PACKED', READY_FOR_PICKUP='READY_FOR_PICKUP', SHIPPED='SHIPPED', IN_TRANSIT='IN_TRANSIT', OUT_FOR_DELIVERY='OUT_FOR_DELIVERY', DELIVERED='DELIVERED', DELIVERY_FAILED='DELIVERY_FAILED', CANCELLED='CANCELLED'
@@ -31,7 +31,11 @@ export class Order extends Model<Order> {
   @Column({field:'address_label',type:DataType.STRING(30),allowNull:true}) declare addressLabel:string|null;
   @Column({type:DataType.STRING(500),allowNull:true}) declare notes:string|null;
   @Column({field:'delivery_agent_id',type:DataType.UUID,allowNull:true}) declare deliveryAgentId:string|null;
+  @Column({field:'delivery_latitude',type:DataType.DECIMAL(10,7),allowNull:true}) declare deliveryLatitude:string|null;
+  @Column({field:'delivery_longitude',type:DataType.DECIMAL(10,7),allowNull:true}) declare deliveryLongitude:string|null;
+  @Column({field:'location_source',type:DataType.STRING(20),allowNull:true}) declare locationSource:string|null;
   @Column({field:'tracking_number',type:DataType.STRING(80),allowNull:true}) declare trackingNumber:string|null;
   @Column({field:'delivery_failure_reason',type:DataType.STRING(300),allowNull:true}) declare deliveryFailureReason:string|null;
   @Column({field:'cod_collected',type:DataType.DECIMAL(12,2),allowNull:true}) declare codCollected:string|null;
 }
+

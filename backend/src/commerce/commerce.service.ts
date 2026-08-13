@@ -47,11 +47,11 @@ export class CommerceService {
   async checkout(userId:string,dto:CheckoutDto){
     const cart=await this.getCart(userId);if(!cart.items.length)throw new BadRequestException('Cart is empty.');
     let delivery:any=dto;
-    if(dto.addressId){const a=await this.users.addressById(userId,dto.addressId);delivery={...dto,customerName:a.recipientName,phone:a.phone,addressLine:a.addressLine,city:a.district,division:a.division,district:a.district,area:a.area,landmark:a.landmark,postalCode:a.postalCode,addressLabel:a.type}}
+    if(dto.addressId){const a=await this.users.addressById(userId,dto.addressId);delivery={...dto,customerName:a.recipientName,phone:a.phone,addressLine:a.addressLine,city:a.district,division:a.division,district:a.district,area:a.area,landmark:a.landmark,postalCode:a.postalCode,addressLabel:a.type,latitude:a.latitude===null?undefined:Number(a.latitude),longitude:a.longitude===null?undefined:Number(a.longitude),locationSource:a.locationSource}}
     const promo=await this.promotions.calculate(dto.couponCode,cart.subtotal);const shipping=cart.subtotal>=3000?0:120;const total=Math.max(0,cart.subtotal+shipping-promo.discount);
     return this.sequelize.transaction(async t=>{
       for(const i of cart.items as any[]) await this.inventory.reserve(i.variantId,i.quantity,t);
-      const order=await this.orderModel.create({orderNumber:this.orderNumber(),userId,status:OrderStatus.CONFIRMED,paymentMode:dto.paymentMode,paymentStatus:dto.paymentMode===PaymentMode.COD?PaymentStatus.UNPAID:PaymentStatus.PENDING,subtotal:cart.subtotal,shippingCharge:shipping,discount:promo.discount,total,customerName:delivery.customerName,phone:delivery.phone,email:dto.email||null,addressLine:delivery.addressLine,city:delivery.city,division:delivery.division||null,district:delivery.district||delivery.city,area:delivery.area||null,landmark:delivery.landmark||null,postalCode:delivery.postalCode||null,addressLabel:delivery.addressLabel||null,notes:dto.notes||null} as any,{transaction:t});
+      const order=await this.orderModel.create({orderNumber:this.orderNumber(),userId,status:OrderStatus.CONFIRMED,paymentMode:dto.paymentMode,paymentStatus:dto.paymentMode===PaymentMode.COD?PaymentStatus.UNPAID:PaymentStatus.PENDING,subtotal:cart.subtotal,shippingCharge:shipping,discount:promo.discount,total,customerName:delivery.customerName,phone:delivery.phone,email:dto.email||null,addressLine:delivery.addressLine,city:delivery.city,division:delivery.division||null,district:delivery.district||delivery.city,area:delivery.area||null,landmark:delivery.landmark||null,postalCode:delivery.postalCode||null,addressLabel:delivery.addressLabel||null,deliveryLatitude:delivery.latitude??null,deliveryLongitude:delivery.longitude??null,locationSource:delivery.locationSource||null,notes:dto.notes||null} as any,{transaction:t});
       for(const i of cart.items as any[]) await this.orderItemModel.create({orderId:order.id,variantId:i.variantId,productName:i.productName,sku:i.sku,barcode:i.barcode,attributes:i.attributes,unitPrice:i.unitPrice,quantity:i.quantity,lineTotal:i.lineTotal} as any,{transaction:t});
       if(promo.promotion)await this.promotions.markUsed(promo.promotion.id,t);
       await this.historyModel.create({orderId:order.id,previousStatus:null,newStatus:OrderStatus.CONFIRMED,actorId:userId,note:promo.promotion?`Order placed with coupon ${promo.promotion.code}`:'Order placed by customer'} as any,{transaction:t});
@@ -105,4 +105,5 @@ export class CommerceService {
     })
   }
 }
+
 
