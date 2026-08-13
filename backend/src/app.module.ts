@@ -5,6 +5,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { User } from './users/models/user.model';
+import { Address } from './users/models/address.model';
 
 import { CatalogModule } from './catalog/catalog.module';
 import { InventoryModule } from './inventory/inventory.module';
@@ -46,7 +47,7 @@ import { Review } from './reviews/models/review.model';
         password:c.get<string>('DB_PASSWORD'),
         database:c.get<string>('DB_DATABASE','neuro_commerce'),
         models:[
-          User,Category,Brand,AttributeGroup,AttributeValue,Product,ProductVariant,
+          User,Address,Category,Brand,AttributeGroup,AttributeValue,Product,ProductVariant,
           Warehouse,Inventory,InventoryMovement,
           Cart,CartItem,Order,OrderItem,OrderStatusHistory,
           Promotion,Review

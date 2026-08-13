@@ -21,7 +21,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       saveAuth(data.accessToken, data.user);
-      router.push(data.user.role === 'ADMIN' ? '/admin' : '/account');
+      router.push(data.user.role === 'ADMIN' ? '/admin' : data.user.role === 'DELIVERY_AGENT' ? '/delivery' : '/account');
     } catch (error: any) {
       setError(error?.response?.data?.message || 'Login failed.');
     } finally {

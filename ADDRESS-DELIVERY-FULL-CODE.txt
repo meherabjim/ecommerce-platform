@@ -1,0 +1,2089 @@
+===== ADDRESS + DELIVERY FULL CODE AUDIT =====
+
+
+============================================================
+FILE: .\backend\src\common\enums\user-role.enum.ts
+============================================================
+
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  CUSTOMER = 'CUSTOMER',
+}
+
+
+============================================================
+FILE: .\backend\src\common\enums\user-status.enum.ts
+============================================================
+
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
+
+
+============================================================
+FILE: .\backend\src\users\models\user.model.ts
+============================================================
+
+import {
+  BeforeCreate,
+  Column,
+  DataType,
+  Default,
+  Model,
+  PrimaryKey,
+  Table,
+  Unique,
+} from 'sequelize-typescript';
+import * as bcrypt from 'bcrypt';
+import { UserRole } from '../../common/enums/user-role.enum';
+import { UserStatus } from '../../common/enums/user-status.enum';
+
+@Table({
+  tableName: 'users',
+  timestamps: true,
+  underscored: true,
+})
+export class User extends Model<User> {
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
+  declare id: string;
+
+  @Column({
+    type: DataType.STRING(120),
+    allowNull: false,
+  })
+  declare name: string;
+
+  @Unique
+  @Column({
+    type: DataType.STRING(180),
+    allowNull: false,
+  })
+  declare email: string;
+
+  @Column({
+    type: DataType.STRING(30),
+    allowNull: true,
+  })
+  declare phone: string | null;
+
+  @Column({
+    field: 'password_hash',
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  declare passwordHash: string;
+
+  @Default(UserRole.CUSTOMER)
+  @Column({
+    type: DataType.ENUM(...Object.values(UserRole)),
+    allowNull: false,
+  })
+  declare role: UserRole;
+
+  @Default(UserStatus.ACTIVE)
+  @Column({
+    type: DataType.ENUM(...Object.values(UserStatus)),
+    allowNull: false,
+  })
+  declare status: UserStatus;
+
+  @BeforeCreate
+  static async normalizeEmail(user: User) {
+    user.email = user.email.trim().toLowerCase();
+  }
+
+  async comparePassword(password: string): Promise<boolean> {
+    return bcrypt.compare(password, this.passwordHash);
+  }
+
+  toSafeJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      email: this.email,
+      phone: this.phone,
+      role: this.role,
+      status: this.status,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+    };
+  }
+}
+
+
+============================================================
+FILE: .\backend\src\users\users.module.ts
+============================================================
+
+import { Module } from '@nestjs/common';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { ConfigModule } from '@nestjs/config';
+import { User } from './models/user.model';
+import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
+
+@Module({
+  imports: [SequelizeModule.forFeature([User]), ConfigModule],
+  providers: [UsersService],
+  controllers: [UsersController],
+  exports: [UsersService],
+})
+export class UsersModule {}
+
+
+============================================================
+FILE: .\backend\src\users\users.service.ts
+============================================================
+
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
+import { User } from './models/user.model';
+import { UserRole } from '../common/enums/user-role.enum';
+import { UserStatus } from '../common/enums/user-status.enum';
+
+@Injectable()
+export class UsersService implements OnModuleInit {
+  constructor(
+    @InjectModel(User)
+    private readonly userModel: typeof User,
+    private readonly configService: ConfigService,
+  ) {}
+
+  async onModuleInit() {
+    await this.ensureAdminUser();
+  }
+
+  async ensureAdminUser() {
+    const email = this.configService
+      .get<string>('ADMIN_EMAIL', 'admin@neurocommerce.local')
+      .trim()
+      .toLowerCase();
+    const password = this.configService.get<string>('ADMIN_PASSWORD', 'Admin12345!');
+    const name = this.configService.get<string>('ADMIN_NAME', 'Super Admin');
+
+    const existing = await this.userModel.findOne({ where: { email } });
+    if (existing) return;
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    await this.userModel.create({
+      name,
+      email,
+      phone: null,
+      passwordHash,
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+    } as any);
+
+    console.log(`Seeded admin user: ${email}`);
+  }
+
+  async createCustomer(input: {
+    name: string;
+    email: string;
+    phone?: string;
+    password: string;
+  }) {
+    const email = input.email.trim().toLowerCase();
+    const existing = await this.userModel.findOne({ where: { email } });
+
+    if (existing) {
+      throw new ConflictException('An account with this email already exists.');
+    }
+
+    const passwordHash = await bcrypt.hash(input.password, 12);
+
+    return this.userModel.create({
+      name: input.name.trim(),
+      email,
+      phone: input.phone?.trim() || null,
+      passwordHash,
+      role: UserRole.CUSTOMER,
+      status: UserStatus.ACTIVE,
+    } as any);
+  }
+
+  async findByEmail(email: string) {
+    return this.userModel.findOne({
+      where: { email: email.trim().toLowerCase() },
+    });
+  }
+
+  async findById(id: string) {
+    return this.userModel.findByPk(id);
+  }
+
+  async findByIdOrFail(id: string) {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('User not found.');
+    return user;
+  }
+
+  async findAll() {
+    const users = await this.userModel.findAll({
+      order: [['createdAt', 'DESC']],
+    });
+    return users.map((user) => user.toSafeJSON());
+  }
+
+  async updateStatus(id: string, status: UserStatus) {
+    const user = await this.findByIdOrFail(id);
+
+    if (user.role === UserRole.ADMIN && status === UserStatus.INACTIVE) {
+      throw new ConflictException('Admin account cannot be disabled from this endpoint.');
+    }
+
+    user.status = status;
+    await user.save();
+
+    return user.toSafeJSON();
+  }
+}
+
+
+============================================================
+FILE: .\backend\src\users\users.controller.ts
+============================================================
+
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../common/enums/user-role.enum';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+
+@Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Patch(':id/status')
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateUserStatusDto) {
+    return this.usersService.updateStatus(id, dto.status);
+  }
+}
+
+
+============================================================
+FILE: .\backend\src\auth\auth.module.ts
+============================================================
+
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { UsersModule } from '../users/users.module';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { RolesGuard } from './guards/roles.guard';
+
+@Module({
+  imports: [
+    UsersModule,
+    PassportModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN', '1d') as any,
+        },
+      }),
+    }),
+  ],
+  controllers: [AuthController],
+  providers: [AuthService, JwtStrategy, RolesGuard],
+  exports: [JwtModule],
+})
+export class AuthModule {}
+
+
+============================================================
+FILE: .\backend\src\auth\auth.service.ts
+============================================================
+
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { UsersService } from '../users/users.service';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { UserStatus } from '../common/enums/user-status.enum';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  private async issueToken(user: any) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    return this.jwtService.signAsync(payload);
+  }
+
+  async register(dto: RegisterDto) {
+    const user = await this.usersService.createCustomer(dto);
+    const accessToken = await this.issueToken(user);
+
+    return {
+      message: 'Registration successful.',
+      accessToken,
+      user: user.toSafeJSON(),
+    };
+  }
+
+  async login(dto: LoginDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+
+    if (!user || !(await user.comparePassword(dto.password))) {
+      throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('This account is inactive.');
+    }
+
+    const accessToken = await this.issueToken(user);
+
+    return {
+      message: 'Login successful.',
+      accessToken,
+      user: user.toSafeJSON(),
+    };
+  }
+}
+
+
+============================================================
+FILE: .\backend\src\auth\auth.controller.ts
+============================================================
+
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Post('register')
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
+  }
+
+  @Post('login')
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  me(@CurrentUser() user: any) {
+    return user;
+  }
+}
+
+
+============================================================
+FILE: .\backend\src\auth\strategies\jwt.strategy.ts
+============================================================
+
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
+import { UsersService } from '../../users/users.service';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { UserStatus } from '../../common/enums/user-status.enum';
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(
+    configService: ConfigService,
+    private readonly usersService: UsersService,
+  ) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+    });
+  }
+
+  async validate(payload: JwtPayload) {
+    const user = await this.usersService.findById(payload.sub);
+
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Account is not active.');
+    }
+
+    return user.toSafeJSON();
+  }
+}
+
+
+============================================================
+FILE: .\backend\src\auth\guards\jwt-auth.guard.ts
+============================================================
+
+import { Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
+
+
+============================================================
+FILE: .\backend\src\auth\guards\roles.guard.ts
+============================================================
+
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ROLES_KEY } from '../decorators/roles.decorator';
+import { UserRole } from '../../common/enums/user-role.enum';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (!requiredRoles || requiredRoles.length === 0) return true;
+
+    const request = context.switchToHttp().getRequest();
+    return requiredRoles.includes(request.user?.role);
+  }
+}
+
+
+============================================================
+FILE: .\backend\src\auth\decorators\current-user.decorator.ts
+============================================================
+
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+
+export const CurrentUser = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+    return request.user;
+  },
+);
+
+
+============================================================
+FILE: .\backend\src\auth\decorators\roles.decorator.ts
+============================================================
+
+import { SetMetadata } from '@nestjs/common';
+import { UserRole } from '../../common/enums/user-role.enum';
+
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
+
+
+============================================================
+FILE: .\backend\src\commerce\models\order.model.ts
+============================================================
+
+import { Column, DataType, Default, Model, PrimaryKey, Table, Unique } from 'sequelize-typescript';
+
+export enum OrderStatus {
+  PENDING='PENDING', CONFIRMED='CONFIRMED', PROCESSING='PROCESSING',
+  PACKED='PACKED', SHIPPED='SHIPPED', DELIVERED='DELIVERED', CANCELLED='CANCELLED'
+}
+export enum PaymentMode { COD='COD', FULL_ONLINE='FULL_ONLINE', PARTIAL='PARTIAL' }
+export enum PaymentStatus { UNPAID='UNPAID', PENDING='PENDING', PARTIAL='PARTIAL', PAID='PAID', FAILED='FAILED', REFUNDED='REFUNDED' }
+
+@Table({ tableName: 'orders', timestamps: true, underscored: true })
+export class Order extends Model<Order> {
+  @PrimaryKey @Default(DataType.UUIDV4) @Column(DataType.UUID) declare id:string;
+  @Unique @Column({ field:'order_number', type:DataType.STRING(40), allowNull:false }) declare orderNumber:string;
+  @Column({ field:'user_id', type:DataType.UUID, allowNull:false }) declare userId:string;
+  @Default(OrderStatus.PENDING) @Column({ type:DataType.ENUM(...Object.values(OrderStatus)), allowNull:false }) declare status:OrderStatus;
+  @Default(PaymentMode.COD) @Column({ field:'payment_mode', type:DataType.ENUM(...Object.values(PaymentMode)), allowNull:false }) declare paymentMode:PaymentMode;
+  @Default(PaymentStatus.UNPAID) @Column({ field:'payment_status', type:DataType.ENUM(...Object.values(PaymentStatus)), allowNull:false }) declare paymentStatus:PaymentStatus;
+  @Column({ type:DataType.DECIMAL(12,2), allowNull:false }) declare subtotal:string;
+  @Default(0) @Column({ field:'shipping_charge', type:DataType.DECIMAL(12,2), allowNull:false }) declare shippingCharge:string;
+  @Default(0) @Column({ type:DataType.DECIMAL(12,2), allowNull:false }) declare discount:string;
+  @Column({ type:DataType.DECIMAL(12,2), allowNull:false }) declare total:string;
+  @Column({ field:'customer_name', type:DataType.STRING(120), allowNull:false }) declare customerName:string;
+  @Column({ field:'phone', type:DataType.STRING(30), allowNull:false }) declare phone:string;
+  @Column({ field:'email', type:DataType.STRING(180), allowNull:true }) declare email:string|null;
+  @Column({ field:'address_line', type:DataType.STRING(300), allowNull:false }) declare addressLine:string;
+  @Column({ field:'city', type:DataType.STRING(100), allowNull:false }) declare city:string;
+  @Column({ field:'postal_code', type:DataType.STRING(30), allowNull:true }) declare postalCode:string|null;
+  @Column({ field:'notes', type:DataType.STRING(500), allowNull:true }) declare notes:string|null;
+}
+
+
+============================================================
+FILE: .\backend\src\commerce\models\order-item.model.ts
+============================================================
+
+import { Column, DataType, Default, Model, PrimaryKey, Table } from 'sequelize-typescript';
+
+@Table({ tableName:'order_items', timestamps:true, underscored:true })
+export class OrderItem extends Model<OrderItem> {
+  @PrimaryKey @Default(DataType.UUIDV4) @Column(DataType.UUID) declare id:string;
+  @Column({ field:'order_id', type:DataType.UUID, allowNull:false }) declare orderId:string;
+  @Column({ field:'variant_id', type:DataType.UUID, allowNull:false }) declare variantId:string;
+  @Column({ field:'product_name', type:DataType.STRING(180), allowNull:false }) declare productName:string;
+  @Column({ type:DataType.STRING(80), allowNull:false }) declare sku:string;
+  @Column({ type:DataType.STRING(12), allowNull:false }) declare barcode:string;
+  @Column({ type:DataType.JSONB, allowNull:false, defaultValue:{} }) declare attributes:Record<string,string>;
+  @Column({ type:DataType.DECIMAL(12,2), allowNull:false }) declare unitPrice:string;
+  @Column({ type:DataType.INTEGER, allowNull:false }) declare quantity:number;
+  @Column({ type:DataType.DECIMAL(12,2), allowNull:false }) declare lineTotal:string;
+}
+
+
+============================================================
+FILE: .\backend\src\commerce\models\order-status-history.model.ts
+============================================================
+
+import { Column, DataType, Default, Model, PrimaryKey, Table } from 'sequelize-typescript';
+
+@Table({ tableName:'order_status_history', timestamps:true, underscored:true })
+export class OrderStatusHistory extends Model<OrderStatusHistory> {
+  @PrimaryKey @Default(DataType.UUIDV4) @Column(DataType.UUID) declare id:string;
+  @Column({ field:'order_id', type:DataType.UUID, allowNull:false }) declare orderId:string;
+  @Column({ field:'previous_status', type:DataType.STRING(40), allowNull:true }) declare previousStatus:string|null;
+  @Column({ field:'new_status', type:DataType.STRING(40), allowNull:false }) declare newStatus:string;
+  @Column({ field:'actor_id', type:DataType.UUID, allowNull:true }) declare actorId:string|null;
+  @Column({ type:DataType.STRING(300), allowNull:true }) declare note:string|null;
+}
+
+
+============================================================
+FILE: .\backend\src\commerce\dto\checkout.dto.ts
+============================================================
+
+import { IsEmail, IsEnum, IsOptional, IsString, Length } from 'class-validator';
+import { PaymentMode } from '../models/order.model';
+
+export class CheckoutDto {
+  @IsString() @Length(2,120) customerName:string;
+  @IsString() @Length(7,30) phone:string;
+  @IsOptional() @IsEmail() email?:string;
+  @IsString() @Length(5,300) addressLine:string;
+  @IsString() @Length(2,100) city:string;
+  @IsOptional() @IsString() postalCode?:string;
+  @IsOptional() @IsString() notes?:string;
+  @IsEnum(PaymentMode) paymentMode:PaymentMode;
+  @IsOptional() @IsString() couponCode?:string;
+}
+
+
+============================================================
+FILE: .\backend\src\commerce\dto\update-order-status.dto.ts
+============================================================
+
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { OrderStatus } from '../models/order.model';
+export class UpdateOrderStatusDto {
+  @IsEnum(OrderStatus) status:OrderStatus;
+  @IsOptional() @IsString() note?:string;
+}
+
+
+============================================================
+FILE: .\backend\src\commerce\commerce.module.ts
+============================================================
+
+import { Module } from '@nestjs/common';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { Cart } from './models/cart.model';
+import { CartItem } from './models/cart-item.model';
+import { Order } from './models/order.model';
+import { OrderItem } from './models/order-item.model';
+import { OrderStatusHistory } from './models/order-status-history.model';
+import { ProductVariant } from '../catalog/models/product-variant.model';
+import { Product } from '../catalog/models/product.model';
+import { InventoryModule } from '../inventory/inventory.module';
+import { PromotionsModule } from '../promotions/promotions.module';
+import { CommerceService } from './commerce.service';
+import { CommerceController } from './commerce.controller';
+
+@Module({
+  imports:[
+    SequelizeModule.forFeature([Cart,CartItem,Order,OrderItem,OrderStatusHistory,ProductVariant,Product]),
+    InventoryModule,
+    PromotionsModule
+  ],
+  providers:[CommerceService],
+  controllers:[CommerceController]
+})
+export class CommerceModule {}
+
+
+============================================================
+FILE: .\backend\src\commerce\commerce.controller.ts
+============================================================
+
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { CommerceService } from './commerce.service'; import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AddCartItemDto, UpdateCartItemDto } from './dto/cart.dto'; import { CheckoutDto } from './dto/checkout.dto'; import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { RolesGuard } from '../auth/guards/roles.guard'; import { Roles } from '../auth/decorators/roles.decorator'; import { UserRole } from '../common/enums/user-role.enum';
+
+@Controller()
+export class CommerceController {
+  constructor(private s:CommerceService){}
+  @Get('cart') @UseGuards(JwtAuthGuard) cart(@CurrentUser() u:any){return this.s.getCart(u.id)}
+  @Post('cart/items') @UseGuards(JwtAuthGuard) add(@CurrentUser() u:any,@Body() d:AddCartItemDto){return this.s.add(u.id,d)}
+  @Patch('cart/items/:id') @UseGuards(JwtAuthGuard) update(@CurrentUser() u:any,@Param('id') id:string,@Body() d:UpdateCartItemDto){return this.s.update(u.id,id,d)}
+  @Delete('cart/items/:id') @UseGuards(JwtAuthGuard) remove(@CurrentUser() u:any,@Param('id') id:string){return this.s.remove(u.id,id)}
+  @Post('checkout') @UseGuards(JwtAuthGuard) checkout(@CurrentUser() u:any,@Body() d:CheckoutDto){return this.s.checkout(u.id,d)}
+  @Get('me/orders') @UseGuards(JwtAuthGuard) myOrders(@CurrentUser() u:any){return this.s.ordersForUser(u.id)}
+  @Get('me/orders/:id') @UseGuards(JwtAuthGuard) myOrder(@CurrentUser() u:any,@Param('id') id:string){return this.s.orderDetails(id,u.id,false)}
+  @Get('admin/orders') @UseGuards(JwtAuthGuard,RolesGuard) @Roles(UserRole.ADMIN) orders(){return this.s.allOrders()}
+  @Patch('admin/orders/:id/status') @UseGuards(JwtAuthGuard,RolesGuard) @Roles(UserRole.ADMIN) status(@CurrentUser() u:any,@Param('id') id:string,@Body() d:UpdateOrderStatusDto){return this.s.updateStatus(id,d.status,u.id,d.note)}
+}
+
+
+============================================================
+FILE: .\backend\src\commerce\commerce.service.ts
+============================================================
+
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Sequelize } from 'sequelize-typescript';
+import { Cart } from './models/cart.model';
+import { CartItem } from './models/cart-item.model';
+import { Order, OrderStatus, PaymentMode, PaymentStatus } from './models/order.model';
+import { OrderItem } from './models/order-item.model';
+import { OrderStatusHistory } from './models/order-status-history.model';
+import { ProductVariant } from '../catalog/models/product-variant.model';
+import { Product } from '../catalog/models/product.model';
+import { InventoryService } from '../inventory/inventory.service';
+import { PromotionsService } from '../promotions/promotions.service';
+import { AddCartItemDto, UpdateCartItemDto } from './dto/cart.dto';
+import { CheckoutDto } from './dto/checkout.dto';
+
+@Injectable()
+export class CommerceService {
+  constructor(
+    @InjectModel(Cart) private cartModel:typeof Cart,
+    @InjectModel(CartItem) private cartItemModel:typeof CartItem,
+    @InjectModel(Order) private orderModel:typeof Order,
+    @InjectModel(OrderItem) private orderItemModel:typeof OrderItem,
+    @InjectModel(OrderStatusHistory) private historyModel:typeof OrderStatusHistory,
+    @InjectModel(ProductVariant) private variantModel:typeof ProductVariant,
+    @InjectModel(Product) private productModel:typeof Product,
+    private inventory:InventoryService,
+    private promotions:PromotionsService,
+    private sequelize:Sequelize
+  ){}
+
+  private async cartFor(userId:string){
+    const [c]=await this.cartModel.findOrCreate({where:{userId},defaults:{userId} as any});
+    return c;
+  }
+
+  async getCart(userId:string){
+    const cart=await this.cartFor(userId);
+    const items=await this.cartItemModel.findAll({where:{cartId:cart.id}});
+    const variants=await this.variantModel.findAll({where:{id:items.map(x=>x.variantId)} as any});
+    const products=await this.productModel.findAll();
+    const stock=await this.inventory.stockSummary();
+
+    const detailed=items.map(i=>{
+      const v=variants.find(x=>x.id===i.variantId);
+      if(!v)return null;
+      const p=products.find(x=>x.id===v.productId);
+      const unit=Number(v.salePrice||v.price);
+      return {
+        id:i.id,variantId:i.variantId,quantity:i.quantity,
+        productName:p?.name||'Product',slug:p?.slug||'',
+        sku:v.sku,barcode:v.barcode,attributes:v.attributes,
+        unitPrice:unit,lineTotal:unit*i.quantity,
+        available:stock.find(s=>s.variantId===v.id)?.available??0
+      };
+    }).filter(Boolean);
+
+    return {
+      id:cart.id,
+      items:detailed,
+      subtotal:detailed.reduce((s:any,x:any)=>s+x.lineTotal,0),
+      itemCount:detailed.reduce((s:any,x:any)=>s+x.quantity,0)
+    };
+  }
+
+  async add(userId:string,dto:AddCartItemDto){
+    const v=await this.variantModel.findByPk(dto.variantId);
+    if(!v||!v.active) throw new NotFoundException('Variant not found.');
+    const stock=(await this.inventory.stockSummary()).find(x=>x.variantId===v.id);
+    if(!stock||dto.quantity>stock.available) throw new BadRequestException('Not enough stock.');
+
+    const cart=await this.cartFor(userId);
+    const existing=await this.cartItemModel.findOne({where:{cartId:cart.id,variantId:v.id}});
+    if(existing){
+      const next=existing.quantity+dto.quantity;
+      if(next>stock.available) throw new BadRequestException('Not enough stock.');
+      existing.quantity=next; await existing.save();
+    }else{
+      await this.cartItemModel.create({cartId:cart.id,variantId:v.id,quantity:dto.quantity} as any);
+    }
+    return this.getCart(userId);
+  }
+
+  async update(userId:string,itemId:string,dto:UpdateCartItemDto){
+    const cart=await this.cartFor(userId);
+    const item=await this.cartItemModel.findOne({where:{id:itemId,cartId:cart.id}});
+    if(!item) throw new NotFoundException('Cart item not found.');
+    const stock=(await this.inventory.stockSummary()).find(x=>x.variantId===item.variantId);
+    if(!stock||dto.quantity>stock.available) throw new BadRequestException('Not enough stock.');
+    item.quantity=dto.quantity;await item.save();
+    return this.getCart(userId);
+  }
+
+  async remove(userId:string,itemId:string){
+    const cart=await this.cartFor(userId);
+    await this.cartItemModel.destroy({where:{id:itemId,cartId:cart.id}});
+    return this.getCart(userId);
+  }
+
+  private orderNumber(){
+    return `NC-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+  }
+
+  async checkout(userId:string,dto:CheckoutDto){
+    const cart=await this.getCart(userId);
+    if(!cart.items.length) throw new BadRequestException('Cart is empty.');
+
+    const promo=await this.promotions.calculate(dto.couponCode,cart.subtotal);
+    const shipping=cart.subtotal>=3000?0:120;
+    const total=Math.max(0,cart.subtotal+shipping-promo.discount);
+
+    return this.sequelize.transaction(async t=>{
+      for(const i of cart.items as any[]) await this.inventory.reserve(i.variantId,i.quantity,t);
+
+      const order=await this.orderModel.create({
+        orderNumber:this.orderNumber(),userId,status:OrderStatus.CONFIRMED,
+        paymentMode:dto.paymentMode,
+        paymentStatus:dto.paymentMode===PaymentMode.COD?PaymentStatus.UNPAID:PaymentStatus.PENDING,
+        subtotal:cart.subtotal,shippingCharge:shipping,discount:promo.discount,total,
+        customerName:dto.customerName,phone:dto.phone,email:dto.email||null,
+        addressLine:dto.addressLine,city:dto.city,postalCode:dto.postalCode||null,
+        notes:dto.notes||null
+      } as any,{transaction:t});
+
+      for(const i of cart.items as any[]){
+        await this.orderItemModel.create({
+          orderId:order.id,variantId:i.variantId,productName:i.productName,
+          sku:i.sku,barcode:i.barcode,attributes:i.attributes,
+          unitPrice:i.unitPrice,quantity:i.quantity,lineTotal:i.lineTotal
+        } as any,{transaction:t});
+      }
+
+      if(promo.promotion) await this.promotions.markUsed(promo.promotion.id,t);
+
+      await this.historyModel.create({
+        orderId:order.id,previousStatus:null,newStatus:OrderStatus.CONFIRMED,
+        actorId:userId,note:promo.promotion?`Order placed with coupon ${promo.promotion.code}`:'Order placed by customer'
+      } as any,{transaction:t});
+
+      const c=await this.cartFor(userId);
+      await this.cartItemModel.destroy({where:{cartId:c.id},transaction:t});
+      return this.orderDetails(order.id,userId,false,t);
+    });
+  }
+
+  async ordersForUser(userId:string){
+    const orders=await this.orderModel.findAll({where:{userId},order:[['createdAt','DESC']]});
+    return Promise.all(orders.map(o=>this.orderDetails(o.id,userId,false)));
+  }
+
+  async allOrders(){
+    const orders=await this.orderModel.findAll({order:[['createdAt','DESC']]});
+    return Promise.all(orders.map(o=>this.orderDetails(o.id,undefined,true)));
+  }
+
+  async orderDetails(id:string,userId?:string,admin=false,transaction?:any){
+    const order=await this.orderModel.findByPk(id,{transaction});
+
+    if(!order||(userId&&!admin&&order.userId!==userId))
+      throw new NotFoundException('Order not found.');
+
+    const rows=await this.orderItemModel.findAll({
+      where:{orderId:id},
+      transaction
+    });
+
+    const variantIds=rows.map(x=>x.variantId);
+
+    const variants=variantIds.length
+      ? await this.variantModel.findAll({
+          where:{id:variantIds} as any,
+          transaction
+        })
+      : [];
+
+    const items=rows.map(item=>{
+      const variant=variants.find(v=>v.id===item.variantId);
+
+      return {
+        ...item.toJSON(),
+        productId:variant?.productId ?? null
+      };
+    });
+
+    const history=await this.historyModel.findAll({
+      where:{orderId:id},
+      order:[['createdAt','ASC']],
+      transaction
+    });
+
+    return {
+      ...order.toJSON(),
+      items,
+      history
+    };
+  }
+
+  async updateStatus(orderId:string,status:OrderStatus,actorId:string,note?:string){
+    return this.sequelize.transaction(async t=>{
+      const order=await this.orderModel.findByPk(orderId,{transaction:t,lock:t.LOCK.UPDATE});
+      if(!order) throw new NotFoundException('Order not found.');
+      const previous=order.status;
+      if(previous===status) return this.orderDetails(orderId,undefined,true,t);
+
+      const allowed:Record<string,OrderStatus[]> = {
+        [OrderStatus.PENDING]:[OrderStatus.CONFIRMED,OrderStatus.CANCELLED],
+        [OrderStatus.CONFIRMED]:[OrderStatus.PROCESSING,OrderStatus.CANCELLED],
+        [OrderStatus.PROCESSING]:[OrderStatus.PACKED,OrderStatus.CANCELLED],
+        [OrderStatus.PACKED]:[OrderStatus.SHIPPED,OrderStatus.CANCELLED],
+        [OrderStatus.SHIPPED]:[OrderStatus.DELIVERED,OrderStatus.CANCELLED],
+        [OrderStatus.DELIVERED]:[],
+        [OrderStatus.CANCELLED]:[]
+      };
+
+      if(!allowed[previous]?.includes(status))
+        throw new BadRequestException(`Cannot change order from ${previous} to ${status}.`);
+
+      const items=await this.orderItemModel.findAll({where:{orderId},transaction:t});
+
+      if(status===OrderStatus.CANCELLED)
+        for(const i of items) await this.inventory.release(i.variantId,i.quantity,t);
+
+      if(status===OrderStatus.DELIVERED){
+        for(const i of items) await this.inventory.consumeReserved(i.variantId,i.quantity,t);
+        if(order.paymentMode===PaymentMode.COD) order.paymentStatus=PaymentStatus.PAID;
+      }
+
+      order.status=status;
+      await order.save({transaction:t});
+
+      await this.historyModel.create({
+        orderId,previousStatus:previous,newStatus:status,actorId,note:note||null
+      } as any,{transaction:t});
+
+      return this.orderDetails(orderId,undefined,true,t);
+    });
+  }
+}
+
+
+
+============================================================
+FILE: .\backend\src\app.module.ts
+============================================================
+
+import { Module } from '@nestjs/common';
+import { ConfigModule,ConfigService } from '@nestjs/config';
+import { SequelizeModule } from '@nestjs/sequelize';
+
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { User } from './users/models/user.model';
+
+import { CatalogModule } from './catalog/catalog.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { CommerceModule } from './commerce/commerce.module';
+import { PromotionsModule } from './promotions/promotions.module';
+import { ReviewsModule } from './reviews/reviews.module';
+
+import { Category } from './catalog/models/category.model';
+import { Brand } from './catalog/models/brand.model';
+import { AttributeGroup } from './catalog/models/attribute-group.model';
+import { AttributeValue } from './catalog/models/attribute-value.model';
+import { Product } from './catalog/models/product.model';
+import { ProductVariant } from './catalog/models/product-variant.model';
+
+import { Warehouse } from './inventory/models/warehouse.model';
+import { Inventory } from './inventory/models/inventory.model';
+import { InventoryMovement } from './inventory/models/inventory-movement.model';
+
+import { Cart } from './commerce/models/cart.model';
+import { CartItem } from './commerce/models/cart-item.model';
+import { Order } from './commerce/models/order.model';
+import { OrderItem } from './commerce/models/order-item.model';
+import { OrderStatusHistory } from './commerce/models/order-status-history.model';
+
+import { Promotion } from './promotions/models/promotion.model';
+import { Review } from './reviews/models/review.model';
+
+@Module({
+  imports:[
+    ConfigModule.forRoot({isGlobal:true}),
+    SequelizeModule.forRootAsync({
+      imports:[ConfigModule],
+      inject:[ConfigService],
+      useFactory:(c:ConfigService)=>({
+        dialect:'postgres',
+        host:c.get<string>('DB_HOST','127.0.0.1'),
+        port:Number(c.get<string>('DB_PORT','5432')),
+        username:c.get<string>('DB_USERNAME','postgres'),
+        password:c.get<string>('DB_PASSWORD'),
+        database:c.get<string>('DB_DATABASE','neuro_commerce'),
+        models:[
+          User,Category,Brand,AttributeGroup,AttributeValue,Product,ProductVariant,
+          Warehouse,Inventory,InventoryMovement,
+          Cart,CartItem,Order,OrderItem,OrderStatusHistory,
+          Promotion,Review
+        ],
+        autoLoadModels:true,
+        synchronize:c.get<string>('DB_SYNC','true')==='true',
+        logging:false
+      })
+    }),
+    UsersModule,
+    AuthModule,
+    InventoryModule,
+    CatalogModule,
+    PromotionsModule,
+    CommerceModule,
+    ReviewsModule
+  ]
+})
+export class AppModule {}
+
+
+============================================================
+FILE: .\backend\src\main.ts
+============================================================
+
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.setGlobalPrefix('api');
+
+  app.enableCors({
+    origin: ['http://localhost:3000'],
+    credentials: true,
+  });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+  const port = Number(process.env.PORT || 5000);
+  await app.listen(port);
+
+  console.log(`Neuro Commerce API running on http://localhost:${port}/api`);
+}
+
+bootstrap();
+
+
+============================================================
+FILE: .\frontend\lib\auth.ts
+============================================================
+
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: 'ADMIN' | 'CUSTOMER';
+  status: 'ACTIVE' | 'INACTIVE';
+};
+
+export function saveAuth(accessToken: string, user: AuthUser) {
+  localStorage.setItem('accessToken', accessToken);
+  localStorage.setItem('authUser', JSON.stringify(user));
+}
+
+export function clearAuth() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('authUser');
+}
+
+export function getStoredUser(): AuthUser | null {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem('authUser');
+  return raw ? JSON.parse(raw) : null;
+}
+
+
+============================================================
+FILE: .\frontend\lib\api.ts
+============================================================
+
+import axios from 'axios';
+
+export const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+
+  return config;
+});
+
+
+============================================================
+FILE: .\frontend\app\checkout\page.tsx
+============================================================
+
+'use client';
+import { FormEvent,useEffect,useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Navbar from '@/components/navbar';
+import { api } from '@/lib/api';
+import { getStoredUser } from '@/lib/auth';
+
+export default function CheckoutPage(){
+  const r=useRouter(),[cart,setCart]=useState<any>(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false);
+  const [f,setF]=useState({
+    customerName:'',phone:'',email:'',addressLine:'',city:'Dhaka',postalCode:'',
+    notes:'',paymentMode:'COD',couponCode:''
+  });
+
+  useEffect(()=>{
+    const u=getStoredUser();
+    if(!u){r.replace('/login');return;}
+    setF(x=>({...x,customerName:u.name,email:u.email}));
+    api.get('/cart').then(x=>{if(!x.data.items.length)r.replace('/cart');else setCart(x.data)})
+  },[r]);
+
+  async function submit(e:FormEvent){
+    e.preventDefault();setBusy(true);setErr('');
+    try{
+      const x=await api.post('/checkout',f);
+      r.push(`/account/orders/${x.data.id}`)
+    }catch(e:any){
+      const m=e?.response?.data?.message;
+      setErr(Array.isArray(m)?m.join(', '):m||'Checkout failed.')
+    }finally{setBusy(false)}
+  }
+
+  if(!cart)return <main className="grid min-h-screen place-items-center">Preparing checkout...</main>;
+  const shipping=cart.subtotal>=3000?0:120;
+
+  return <main className="min-h-screen bg-[#f7f7f5] text-slate-950">
+    <Navbar/>
+    <div className="mx-auto max-w-6xl px-5 py-12">
+      <h1 className="text-4xl font-black">Checkout</h1>
+      <form onSubmit={submit} className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
+        <section className="rounded-3xl border bg-white p-6">
+          <h2 className="text-xl font-black">Delivery information</h2>
+          {err&&<p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{err}</p>}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {[
+              ['customerName','Full name'],['phone','Phone'],['email','Email'],
+              ['city','City'],['postalCode','Postal code']
+            ].map(([k,l])=><label key={k} className="text-sm font-bold">{l}
+              <input className="mt-2 w-full rounded-xl border p-3 font-normal text-slate-950"
+                value={(f as any)[k]} onChange={e=>setF({...f,[k]:e.target.value})}
+                required={!['email','postalCode'].includes(k)}/>
+            </label>)}
+          </div>
+          <label className="mt-4 block text-sm font-bold">Full address
+            <textarea className="mt-2 min-h-24 w-full rounded-xl border p-3 font-normal text-slate-950"
+              value={f.addressLine} onChange={e=>setF({...f,addressLine:e.target.value})} required/>
+          </label>
+          <label className="mt-4 block text-sm font-bold">Order note
+            <textarea className="mt-2 min-h-20 w-full rounded-xl border p-3 font-normal text-slate-950"
+              value={f.notes} onChange={e=>setF({...f,notes:e.target.value})}/>
+          </label>
+
+          <h2 className="mt-7 text-xl font-black">Coupon</h2>
+          <input className="mt-3 w-full rounded-xl border p-3 uppercase" placeholder="Enter coupon code"
+            value={f.couponCode} onChange={e=>setF({...f,couponCode:e.target.value.toUpperCase()})}/>
+
+          <h2 className="mt-7 text-xl font-black">Payment</h2>
+          <div className="mt-3 space-y-2">
+            {[['COD','Cash on delivery'],['FULL_ONLINE','Online payment (gateway-ready)'],['PARTIAL','Partial payment (gateway-ready)']]
+              .map(([v,l])=><label key={v} className="flex items-center gap-3 rounded-xl border p-4">
+                <input type="radio" name="payment" value={v} checked={f.paymentMode===v}
+                  onChange={e=>setF({...f,paymentMode:e.target.value})}/>
+                <span className="font-semibold">{l}</span>
+              </label>)}
+          </div>
+        </section>
+
+        <aside className="h-fit rounded-3xl bg-slate-950 p-6 text-white">
+          <h2 className="text-xl font-black">Order summary</h2>
+          <div className="mt-5 space-y-3 text-sm">
+            {cart.items.map((x:any)=><div key={x.id} className="flex justify-between gap-3">
+              <span>{x.productName} x {x.quantity}</span><span>BDT {x.lineTotal}</span>
+            </div>)}
+          </div>
+          <div className="mt-5 border-t border-white/10 pt-4 text-sm">
+            <div className="flex justify-between"><span>Subtotal</span><span>BDT {cart.subtotal}</span></div>
+            <div className="mt-2 flex justify-between"><span>Shipping</span><span>BDT {shipping}</span></div>
+            <p className="mt-3 text-xs text-white/50">Coupon discount is validated when you place the order.</p>
+          </div>
+          <button disabled={busy} className="mt-6 w-full rounded-xl bg-white py-3.5 font-bold text-slate-950 disabled:opacity-50">
+            {busy?'Placing order...':'Place order'}
+          </button>
+        </aside>
+      </form>
+    </div>
+  </main>
+}
+
+
+============================================================
+FILE: .\frontend\app\account\page.tsx
+============================================================
+
+'use client';
+import { useEffect,useState } from 'react'; import { useRouter } from 'next/navigation'; import Link from 'next/link'; import Navbar from '@/components/navbar'; import { api } from '@/lib/api'; import { getStoredUser } from '@/lib/auth';
+export default function AccountPage(){const r=useRouter(),[u,setU]=useState<any>(null),[orders,setOrders]=useState<any[]>([]);useEffect(()=>{const me=getStoredUser();if(!me){r.replace('/login');return;}setU(me);api.get('/me/orders').then(x=>setOrders(x.data))},[r]);if(!u)return null;return <main className="min-h-screen bg-[#f7f7f5]"><Navbar/><div className="mx-auto max-w-6xl px-5 py-12"><div className="rounded-[2rem] bg-slate-950 p-8 text-white"><p className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">Customer portal</p><h1 className="mt-2 text-4xl font-black">Hello, {u.name}</h1><p className="mt-2 text-white/50">{u.email}</p></div><section className="mt-6 rounded-3xl bg-white p-6 text-slate-950"><div className="flex items-end justify-between"><div><h2 className="text-2xl font-black">Your orders</h2><p className="mt-1 text-sm text-slate-500">Track order, payment and fulfillment status.</p></div><Link href="/shop" className="text-sm font-bold underline">Shop more</Link></div><div className="mt-5 space-y-3">{orders.map(x=><Link key={x.id} href={`/account/orders/${x.id}`} className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-950 transition hover:bg-slate-100 md:grid-cols-4"><span className="font-black">{x.orderNumber}</span><span>{x.status}</span><span>{x.paymentStatus}</span><span className="font-black md:text-right">BDT {x.total}</span></Link>)}{!orders.length&&<p className="rounded-2xl border border-dashed p-8 text-center text-slate-500">No orders yet.</p>}</div></section></div></main>}
+
+
+
+
+============================================================
+FILE: .\frontend\app\account\orders\[id]\page.tsx
+============================================================
+
+'use client';
+
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
+import Navbar from '@/components/navbar';
+import { api } from '@/lib/api';
+
+type ReviewDraft = {
+  rating: number;
+  comment: string;
+};
+
+export default function OrderDetails() {
+  const params = useParams<{ id: string }>();
+
+  const [order, setOrder] = useState<any>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  const [openVariantId, setOpenVariantId] =
+    useState<string | null>(null);
+
+  const [drafts, setDrafts] = useState<
+    Record<string, ReviewDraft>
+  >({});
+
+  const [messages, setMessages] = useState<
+    Record<string, string>
+  >({});
+
+  const [submitting, setSubmitting] =
+    useState<string | null>(null);
+
+  async function load() {
+    const [orderResponse, reviewsResponse] =
+      await Promise.all([
+        api.get(`/me/orders/${params.id}`),
+        api.get('/reviews/me'),
+      ]);
+
+    setOrder(orderResponse.data);
+    setReviews(reviewsResponse.data || []);
+  }
+
+  useEffect(() => {
+    load();
+  }, [params.id]);
+
+  const reviewedVariants = useMemo(() => {
+    const map = new Map<string, any>();
+
+    for (const review of reviews) {
+      for (const variantId of review.variantIds || []) {
+        map.set(variantId, review);
+      }
+    }
+
+    return map;
+  }, [reviews]);
+
+  function getDraft(variantId: string): ReviewDraft {
+    return (
+      drafts[variantId] || {
+        rating: 5,
+        comment: '',
+      }
+    );
+  }
+
+  function updateDraft(
+    variantId: string,
+    values: Partial<ReviewDraft>,
+  ) {
+    setDrafts((current) => ({
+      ...current,
+      [variantId]: {
+        ...getDraft(variantId),
+        ...values,
+      },
+    }));
+  }
+
+  async function submitReview(
+    event: FormEvent,
+    variantId: string,
+  ) {
+    event.preventDefault();
+
+    const draft = getDraft(variantId);
+
+    setSubmitting(variantId);
+    setMessages((current) => ({
+      ...current,
+      [variantId]: '',
+    }));
+
+    try {
+      const response = await api.post('/reviews', {
+        variantId,
+        rating: draft.rating,
+        comment: draft.comment.trim() || undefined,
+      });
+
+      setReviews((current) => [
+        {
+          ...response.data,
+          variantIds: [variantId],
+        },
+        ...current,
+      ]);
+
+      setMessages((current) => ({
+        ...current,
+        [variantId]:
+          'Review submitted successfully. It is waiting for admin approval.',
+      }));
+
+      setOpenVariantId(null);
+    } catch (error: any) {
+      setMessages((current) => ({
+        ...current,
+        [variantId]:
+          error?.response?.data?.message ||
+          'Could not submit review.',
+      }));
+
+      // Reload because a 409 may mean the review
+      // already exists in the database.
+      try {
+        const response = await api.get('/reviews/me');
+        setReviews(response.data || []);
+      } catch {}
+    } finally {
+      setSubmitting(null);
+    }
+  }
+
+  if (!order) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#f7f7f5] text-slate-950">
+        Loading order...
+      </main>
+    );
+  }
+
+  const delivered = order.status === 'DELIVERED';
+
+  return (
+    <main className="min-h-screen bg-[#f7f7f5] text-slate-950">
+      <Navbar />
+
+      <div className="mx-auto max-w-5xl px-5 py-12">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+            Order
+          </p>
+
+          <h1 className="mt-2 text-4xl font-black">
+            {order.orderNumber}
+          </h1>
+
+          {delivered && (
+            <p className="mt-3 text-sm font-medium text-emerald-700">
+              Delivered successfully. You can now review the
+              products from this order.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {[
+            ['Status', order.status],
+            [
+              'Payment',
+              `${order.paymentMode} · ${order.paymentStatus}`,
+            ],
+            ['Total', `BDT ${order.total}`],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              className="rounded-3xl border border-slate-200 bg-white p-5"
+            >
+              <p className="text-sm text-slate-500">
+                {label}
+              </p>
+
+              <p className="mt-2 text-lg font-black">
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* ==================================================
+            ORDER ITEMS
+        ================================================== */}
+
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-black">
+                Items
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Products included in this order.
+              </p>
+            </div>
+
+            {!delivered && (
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-500">
+                Review available after delivery
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4 divide-y divide-slate-200">
+            {order.items.map((item: any) => {
+              const existingReview =
+                reviewedVariants.get(item.variantId);
+
+              const draft = getDraft(item.variantId);
+
+              const reviewOpen =
+                openVariantId === item.variantId;
+
+              return (
+                <div
+                  key={item.id}
+                  className="py-6"
+                >
+                  <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
+                    <div className="min-w-0">
+                      <p className="text-lg font-black">
+                        {item.productName}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-500">
+                        {item.sku}
+                        {Object.values(
+                          item.attributes || {},
+                        ).length > 0 &&
+                          ` · ${Object.values(
+                            item.attributes || {},
+                          ).join(' / ')}`}
+                      </p>
+
+                      <p className="mt-2 text-sm text-slate-500">
+                        Qty: {item.quantity}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
+                      <p className="font-black">
+                        BDT {item.lineTotal}
+                      </p>
+
+                      {/* Already reviewed */}
+                      {delivered && existingReview && (
+                        <div className="text-left md:text-right">
+                          <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                            ? Reviewed
+                          </span>
+
+                          <p className="mt-1 text-xs text-slate-500">
+                            Status:{' '}
+                            {existingReview.status}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Review button */}
+                      {delivered && !existingReview && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenVariantId(
+                              reviewOpen
+                                ? null
+                                : item.variantId,
+                            )
+                          }
+                          className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
+                        >
+                          {reviewOpen
+                            ? 'Cancel'
+                            : 'Write Review'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* =================================================
+                      REVIEW FORM
+                  ================================================= */}
+
+                  {delivered &&
+                    !existingReview &&
+                    reviewOpen && (
+                      <form
+                        onSubmit={(event) =>
+                          submitReview(
+                            event,
+                            item.variantId,
+                          )
+                        }
+                        className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                      >
+                        <div>
+                          <p className="font-black">
+                            Review {item.productName}
+                          </p>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            Share your experience after
+                            receiving this product.
+                          </p>
+                        </div>
+
+                        <div className="mt-5">
+                          <label className="text-sm font-bold">
+                            Rating
+                          </label>
+
+                          <div className="mt-2 flex gap-2">
+                            {[1, 2, 3, 4, 5].map(
+                              (star) => (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onClick={() =>
+                                    updateDraft(
+                                      item.variantId,
+                                      {
+                                        rating: star,
+                                      },
+                                    )
+                                  }
+                                  className="text-3xl leading-none transition hover:scale-110"
+                                  aria-label={`${star} stars`}
+                                >
+                                  {star <=
+                                  draft.rating
+                                    ? '?'
+                                    : '?'}
+                                </button>
+                              ),
+                            )}
+                          </div>
+
+                          <p className="mt-2 text-xs font-semibold text-slate-500">
+                            {draft.rating} out of 5
+                          </p>
+                        </div>
+
+                        <div className="mt-5">
+                          <label className="text-sm font-bold">
+                            Comment
+                            <span className="ml-1 font-normal text-slate-400">
+                              (optional)
+                            </span>
+                          </label>
+
+                          <textarea
+                            value={draft.comment}
+                            onChange={(event) =>
+                              updateDraft(
+                                item.variantId,
+                                {
+                                  comment:
+                                    event.target.value,
+                                },
+                              )
+                            }
+                            placeholder="How was the product?"
+                            maxLength={1000}
+                            className="mt-2 min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-slate-950"
+                          />
+
+                          <p className="mt-1 text-right text-xs text-slate-400">
+                            {draft.comment.length}/1000
+                          </p>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={
+                            submitting ===
+                            item.variantId
+                          }
+                          className="mt-4 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {submitting ===
+                          item.variantId
+                            ? 'Submitting...'
+                            : 'Submit Review'}
+                        </button>
+                      </form>
+                    )}
+
+                  {messages[item.variantId] && (
+                    <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-700">
+                      {messages[item.variantId]}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ==================================================
+            STATUS TIMELINE
+        ================================================== */}
+
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
+          <h2 className="text-xl font-black">
+            Status timeline
+          </h2>
+
+          <div className="mt-4 space-y-3">
+            {order.history.map((item: any) => (
+              <div
+                key={item.id}
+                className="border-l-2 border-slate-950 pl-4"
+              >
+                <p className="font-black">
+                  {item.newStatus}
+                </p>
+
+                <p className="text-sm text-slate-500">
+                  {item.note || 'Status updated'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+
+============================================================
+FILE: .\frontend\app\admin\orders\page.tsx
+============================================================
+
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import AdminShell from '@/components/admin-shell';
+import { api } from '@/lib/api';
+import { getStoredUser } from '@/lib/auth';
+
+const transitions: Record<string,string[]> = {
+  PENDING:['CONFIRMED','CANCELLED'],
+  CONFIRMED:['PROCESSING','CANCELLED'],
+  PROCESSING:['PACKED','CANCELLED'],
+  PACKED:['SHIPPED','CANCELLED'],
+  SHIPPED:['DELIVERED','CANCELLED'],
+  DELIVERED:[],
+  CANCELLED:[],
+};
+
+export default function AdminOrders() {
+  const router = useRouter();
+  const [orders,setOrders] = useState<any[]>([]);
+  const [query,setQuery] = useState('');
+  const [filter,setFilter] = useState('');
+  const [message,setMessage] = useState('');
+
+  async function load(){ setOrders((await api.get('/admin/orders')).data); }
+
+  useEffect(() => {
+    const user = getStoredUser();
+    if(!user || user.role !== 'ADMIN'){ router.replace('/login'); return; }
+    load();
+  }, [router]);
+
+  async function update(id:string,status:string){
+    try{
+      await api.patch(`/admin/orders/${id}/status`,{
+        status,
+        note:`Status changed to ${status} by admin`
+      });
+      setMessage(`Order moved to ${status}.`);
+      await load();
+    }catch(e:any){
+      setMessage(e?.response?.data?.message || 'Update failed.');
+    }
+  }
+
+  const visible = useMemo(() => orders.filter((o) => {
+    const haystack = `${o.orderNumber} ${o.customerName} ${o.phone} ${o.city}`.toLowerCase();
+    return haystack.includes(query.toLowerCase()) && (!filter || o.status === filter);
+  }), [orders,query,filter]);
+
+  return (
+    <AdminShell>
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Fulfillment</p>
+          <h1 className="mt-2 text-4xl font-black">Orders</h1>
+          <p className="mt-2 text-slate-500">Search, review and progress customer orders.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <input className="rounded-xl border bg-white px-4 py-3 text-sm" placeholder="Search order/customer..."
+            value={query} onChange={(e)=>setQuery(e.target.value)} />
+          <select className="rounded-xl border bg-white px-4 py-3 text-sm" value={filter} onChange={(e)=>setFilter(e.target.value)}>
+            <option value="">All statuses</option>
+            {Object.keys(transitions).map((s)=><option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {message && <p className="mt-5 rounded-2xl border bg-white p-4 text-sm font-semibold">{message}</p>}
+
+      <section className="mt-8 space-y-4">
+        {visible.map((o) => (
+          <div key={o.id} className="rounded-3xl border border-slate-200 bg-white p-6">
+            <div className="flex flex-wrap justify-between gap-4">
+              <div>
+                <p className="text-lg font-black">{o.orderNumber}</p>
+                <p className="mt-1 text-sm text-slate-500">{o.customerName} | {o.phone} | {o.city}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black">BDT {o.total}</p>
+                <p className="text-sm text-slate-500">{o.paymentMode} | {o.paymentStatus}</p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <span className="mr-2 text-sm font-bold">Current: {o.status}</span>
+              {(transitions[o.status] || []).map((s) => (
+                <button key={s} onClick={()=>update(o.id,s)}
+                  className={`rounded-lg border px-3 py-2 text-xs font-bold ${s==='CANCELLED'?'border-red-200 text-red-600':'border-slate-300 hover:bg-slate-950 hover:text-white'}`}>
+                  {s}
+                </button>
+              ))}
+              {!(transitions[o.status] || []).length && (
+                <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-500">Final state</span>
+              )}
+            </div>
+
+            <div className="mt-4 grid gap-2 md:grid-cols-2">
+              {o.items.map((x:any) => (
+                <div key={x.id} className="rounded-xl bg-slate-50 p-3 text-sm">
+                  <b>{x.productName}</b> x {x.quantity} | BDT {x.lineTotal}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {!visible.length && <div className="rounded-3xl border border-dashed p-12 text-center text-slate-500">No matching orders.</div>}
+      </section>
+    </AdminShell>
+  );
+}
+
+
+============================================================
+FILE: .\frontend\app\admin\users\page.tsx
+============================================================
+
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+import AdminShell from '@/components/admin-shell';
+import { api } from '@/lib/api';
+import { getStoredUser } from '@/lib/auth';
+
+export default function AdminUsersPage() {
+  const router = useRouter();
+
+  const [users, setUsers] = useState<any[]>([]);
+  const [search, setSearch] = useState('');
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function load() {
+    try {
+      const response = await api.get('/users');
+      setUsers(response.data || []);
+    } catch (error: any) {
+      setMessage(
+        error?.response?.data?.message ||
+        'Could not load users.'
+      );
+    }
+  }
+
+  useEffect(() => {
+    const user = getStoredUser();
+
+    if (!user || user.role !== 'ADMIN') {
+      router.replace('/login');
+      return;
+    }
+
+    load();
+  }, [router]);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+
+    if (!q) return users;
+
+    return users.filter((user) =>
+      [
+        user.name,
+        user.email,
+        user.phone,
+        user.role,
+        user.status,
+      ]
+        .filter(Boolean)
+        .some((value) =>
+          String(value).toLowerCase().includes(q)
+        )
+    );
+  }, [users, search]);
+
+  async function changeStatus(
+    id: string,
+    status: 'ACTIVE' | 'INACTIVE'
+  ) {
+    setBusy(id);
+    setMessage('');
+
+    try {
+      await api.patch(`/users/${id}/status`, {
+        status,
+      });
+
+      setMessage(
+        status === 'ACTIVE'
+          ? 'User activated.'
+          : 'User deactivated.'
+      );
+
+      await load();
+    } catch (error: any) {
+      setMessage(
+        error?.response?.data?.message ||
+        'Could not update user.'
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <AdminShell>
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+            Customers
+          </p>
+
+          <h1 className="mt-2 text-4xl font-black">
+            User management
+          </h1>
+
+          <p className="mt-2 text-sm text-slate-500">
+            Manage registered customer accounts.
+          </p>
+        </div>
+
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search users..."
+          className="w-full rounded-xl border bg-white px-4 py-3 md:w-80"
+        />
+      </div>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-3xl border bg-white p-5">
+          <p className="text-sm text-slate-500">
+            Total users
+          </p>
+          <p className="mt-2 text-3xl font-black">
+            {users.length}
+          </p>
+        </div>
+
+        <div className="rounded-3xl border bg-white p-5">
+          <p className="text-sm text-slate-500">
+            Active
+          </p>
+          <p className="mt-2 text-3xl font-black">
+            {
+              users.filter(
+                (u) => u.status === 'ACTIVE'
+              ).length
+            }
+          </p>
+        </div>
+
+        <div className="rounded-3xl border bg-white p-5">
+          <p className="text-sm text-slate-500">
+            Inactive
+          </p>
+          <p className="mt-2 text-3xl font-black">
+            {
+              users.filter(
+                (u) => u.status === 'INACTIVE'
+              ).length
+            }
+          </p>
+        </div>
+      </div>
+
+      {message && (
+        <p className="mt-5 rounded-2xl border bg-white p-4 text-sm font-semibold">
+          {message}
+        </p>
+      )}
+
+      <section className="mt-6 overflow-hidden rounded-3xl border bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[750px] text-left text-sm">
+            <thead className="border-b bg-slate-50">
+              <tr>
+                <th className="px-5 py-4">User</th>
+                <th className="px-5 py-4">Contact</th>
+                <th className="px-5 py-4">Role</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4 text-right">
+                  Action
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y">
+              {filtered.map((user) => (
+                <tr key={user.id}>
+                  <td className="px-5 py-4">
+                    <p className="font-black">
+                      {user.name}
+                    </p>
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <p>{user.email}</p>
+                    <p className="text-xs text-slate-400">
+                      {user.phone || 'No phone'}
+                    </p>
+                  </td>
+
+                  <td className="px-5 py-4">
+                    {user.role}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold">
+                      {user.status}
+                    </span>
+                  </td>
+
+                  <td className="px-5 py-4 text-right">
+                    {user.role === 'ADMIN' ? (
+                      <span className="text-xs text-slate-400">
+                        Protected
+                      </span>
+                    ) : user.status === 'ACTIVE' ? (
+                      <button
+                        disabled={busy === user.id}
+                        onClick={() =>
+                          changeStatus(
+                            user.id,
+                            'INACTIVE'
+                          )
+                        }
+                        className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600"
+                      >
+                        Deactivate
+                      </button>
+                    ) : (
+                      <button
+                        disabled={busy === user.id}
+                        onClick={() =>
+                          changeStatus(
+                            user.id,
+                            'ACTIVE'
+                          )
+                        }
+                        className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-bold text-white"
+                      >
+                        Activate
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {!filtered.length && (
+          <div className="p-10 text-center text-slate-500">
+            No users found.
+          </div>
+        )}
+      </section>
+    </AdminShell>
+  );
+}
+
+
+============================================================
+FILE: .\frontend\components\admin-shell.tsx
+============================================================
+
+'use client';
+import Link from 'next/link';
+import { usePathname,useRouter } from 'next/navigation';
+import { clearAuth } from '@/lib/auth';
+
+const links=[
+  {href:'/admin',label:'Overview'},
+  {href:'/admin/catalog',label:'Catalog'},
+  {href:'/admin/inventory',label:'Inventory'},
+  {href:'/admin/orders',label:'Orders'},
+  {href:'/admin/users',label:'Users'},
+  {href:'/admin/promotions',label:'Promotions'},
+  {href:'/admin/reviews',label:'Reviews'},
+];
+
+export default function AdminShell({children}:{children:React.ReactNode}){
+  const p=usePathname(),r=useRouter();
+  return <div className="min-h-screen bg-[#f4f5f7] text-slate-950">
+    <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-slate-200 bg-slate-950 p-5 text-white lg:block">
+      <Link href="/admin" className="text-xl font-black">Neuro Commerce</Link>
+      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/40">Admin console</p>
+      <nav className="mt-10 space-y-2">
+        {links.map(l=>{
+          const a=l.href==='/admin'?p==='/admin':p.startsWith(l.href);
+          return <Link key={l.href} href={l.href}
+            className={`block rounded-xl px-4 py-3 text-sm font-bold ${a?'bg-white text-slate-950':'text-white/60 hover:bg-white/10 hover:text-white'}`}>
+            {l.label}
+          </Link>
+        })}
+      </nav>
+      <button onClick={()=>{clearAuth();r.push('/login')}}
+        className="absolute bottom-6 left-5 right-5 rounded-xl border border-white/15 px-4 py-3 text-sm font-bold text-white/70">
+        Sign out
+      </button>
+    </aside>
+    <main className="lg:pl-64">
+      <div className="mx-auto max-w-[1500px] p-5 md:p-8">{children}</div>
+    </main>
+  </div>
+}
+
+
+
+============================================================
+FILE: .\frontend\components\navbar.tsx
+============================================================
+
+'use client';
+import Link from 'next/link'; import { ShoppingBag,UserRound } from 'lucide-react';
+export default function Navbar(){return <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5"><Link href="/" className="flex items-center gap-2 font-black"><span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 text-white">N</span>Neuro Commerce</Link><nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex"><Link href="/">Home</Link><Link href="/shop">Shop</Link><Link href="/account">Account</Link></nav><div className="flex gap-2"><Link href="/account" className="grid h-10 w-10 place-items-center rounded-xl border"><UserRound size={18}/></Link><Link href="/cart" className="grid h-10 w-10 place-items-center rounded-xl bg-slate-950 text-white"><ShoppingBag size={18}/></Link></div></div></header>}
+
+
+============================================================
+EXISTING ADDRESS / DELIVERY REFERENCES
+============================================================
+E:\project4\backend\src\catalog\catalog.service.ts:50: const c=await this.categoryModel.create({name:'Lifestyle',slug:'lifestyle',barcodePrefix:'12',description:'Demo category. Replace with your assigned sector.',active:true,nextBarcodeSerial:1} as any);
+E:\project4\backend\src\commerce\commerce.service.ts:120: addressLine:dto.addressLine,city:dto.city,postalCode:dto.postalCode||null,
+E:\project4\backend\src\commerce\dto\checkout.dto.ts:8: @IsString() @Length(5,300) addressLine:string;
+E:\project4\backend\src\commerce\models\order.model.ts:25: @Column({ field:'address_line', type:DataType.STRING(300), allowNull:false }) declare addressLine:string;
+E:\project4\backend\src\inventory\inventory.service.ts:19: const [w]=await this.warehouseModel.findOrCreate({where:{code:'MAIN'},defaults:{name:'Main Warehouse',code:'MAIN',address:'Primary stock location',active:true} as any}); return w;
+E:\project4\backend\src\inventory\models\warehouse.model.ts:7: @Column({type:DataType.STRING(300),allowNull:true}) declare address:string|null;
+E:\project4\frontend\app\account\orders\[id]\page.tsx:211: Review available after delivery
+E:\project4\frontend\app\account\orders\[id]\page.tsx:363: <textarea
+E:\project4\frontend\app\admin\catalog\page.tsx:147: <textarea className="mt-3 min-h-28 w-full rounded-xl border p-3" placeholder="Full description" value={product.description} onChange={e=>setProduct({...product,description:e.target.value})}/>
+E:\project4\frontend\app\checkout\page.tsx:11: customerName:'',phone:'',email:'',addressLine:'',city:'Dhaka',postalCode:'',
+E:\project4\frontend\app\checkout\page.tsx:42: <h2 className="text-xl font-black">Delivery information</h2>
+E:\project4\frontend\app\checkout\page.tsx:54: <label className="mt-4 block text-sm font-bold">Full address
+E:\project4\frontend\app\checkout\page.tsx:55: <textarea className="mt-2 min-h-24 w-full rounded-xl border p-3 font-normal text-slate-950"
+E:\project4\frontend\app\checkout\page.tsx:56: value={f.addressLine} onChange={e=>setF({...f,addressLine:e.target.value})} required/>
+E:\project4\frontend\app\checkout\page.tsx:59: <textarea className="mt-2 min-h-20 w-full rounded-xl border p-3 font-normal text-slate-950"
+E:\project4\frontend\app\checkout\page.tsx:69: {[['COD','Cash on delivery'],['FULL_ONLINE','Online payment (gateway-ready)'],['PARTIAL','Partial payment (gateway-ready)']]

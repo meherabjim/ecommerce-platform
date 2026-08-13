@@ -9,16 +9,8 @@ import { ProductVariant } from '../catalog/models/product-variant.model';
 import { Product } from '../catalog/models/product.model';
 import { InventoryModule } from '../inventory/inventory.module';
 import { PromotionsModule } from '../promotions/promotions.module';
+import { UsersModule } from '../users/users.module';
 import { CommerceService } from './commerce.service';
 import { CommerceController } from './commerce.controller';
-
-@Module({
-  imports:[
-    SequelizeModule.forFeature([Cart,CartItem,Order,OrderItem,OrderStatusHistory,ProductVariant,Product]),
-    InventoryModule,
-    PromotionsModule
-  ],
-  providers:[CommerceService],
-  controllers:[CommerceController]
-})
+@Module({imports:[SequelizeModule.forFeature([Cart,CartItem,Order,OrderItem,OrderStatusHistory,ProductVariant,Product]),InventoryModule,PromotionsModule,UsersModule],providers:[CommerceService],controllers:[CommerceController]})
 export class CommerceModule {}

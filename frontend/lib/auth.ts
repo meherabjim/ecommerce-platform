@@ -3,7 +3,7 @@ export type AuthUser = {
   name: string;
   email: string;
   phone?: string | null;
-  role: 'ADMIN' | 'CUSTOMER';
+  role: 'ADMIN' | 'CUSTOMER' | 'DELIVERY_AGENT';
   status: 'ACTIVE' | 'INACTIVE';
 };
 

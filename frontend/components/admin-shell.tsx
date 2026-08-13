@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import Link from 'next/link';
 import { usePathname,useRouter } from 'next/navigation';
 import { clearAuth } from '@/lib/auth';
@@ -9,6 +9,7 @@ const links=[
   {href:'/admin/inventory',label:'Inventory'},
   {href:'/admin/orders',label:'Orders'},
   {href:'/admin/users',label:'Users'},
+  {href:'/admin/delivery',label:'Delivery'},
   {href:'/admin/promotions',label:'Promotions'},
   {href:'/admin/reviews',label:'Reviews'},
 ];
