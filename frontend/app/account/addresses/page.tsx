@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   FormEvent,
@@ -9,10 +9,13 @@ import {
 import { useRouter } from 'next/navigation';
 
 import Navbar from '@/components/navbar';
+import AccountShell from '@/components/account-shell';
+import StoreFooter from '@/components/store-footer';
 import LocationPicker from '@/components/location-picker';
 
 import { api } from '@/lib/api';
 import { getStoredUser } from '@/lib/auth';
+import { authRedirectUrl } from '@/lib/customer-auth';
 
 const empty = {
   recipientName:'',
@@ -61,7 +64,7 @@ export default function AddressesPage() {
     const user = getStoredUser();
 
     if (!user || user.role !== 'CUSTOMER') {
-      router.replace('/login');
+      router.replace(authRedirectUrl(window.location.pathname));
       return;
     }
 
@@ -151,7 +154,7 @@ export default function AddressesPage() {
     <main className="min-h-screen bg-[#f7f7f5] text-slate-950">
       <Navbar />
 
-      <div className="mx-auto max-w-7xl px-5 py-10">
+      <AccountShell>
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
             Customer portal
@@ -176,7 +179,7 @@ export default function AddressesPage() {
         <div className="mt-7 grid gap-6 xl:grid-cols-[520px_1fr]">
           <form
             onSubmit={submit}
-            className="h-fit rounded-3xl border bg-white p-6"
+            className="h-fit rounded-[1.75rem] border border-slate-200 bg-white p-6 premium-shadow"
           >
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-black">
@@ -313,7 +316,7 @@ export default function AddressesPage() {
               </label>
             </div>
 
-            <button className="mt-5 w-full rounded-xl bg-slate-950 py-3 font-bold text-white">
+            <button className="mt-5 w-full rounded-xl bg-[#1464f4] py-3 font-bold text-white">
               {editId
                 ? 'Update address'
                 : 'Save address'}
@@ -451,7 +454,9 @@ export default function AddressesPage() {
             )}
           </section>
         </div>
-      </div>
+      </AccountShell>
+
+      <StoreFooter />
     </main>
   );
 }

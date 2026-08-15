@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   useEffect,
@@ -79,9 +79,9 @@ export default function AdminOrderDetails() {
 
     if (
       !user ||
-      user.role !== 'ADMIN'
+      !['SUPER_ADMIN','ADMIN','ORDER_MANAGER','CUSTOMER_SUPPORT','FINANCE'].includes(String(user.role).toUpperCase())
     ) {
-      router.replace('/login');
+      router.replace('/admin?denied=1');
       return;
     }
 
@@ -97,6 +97,12 @@ export default function AdminOrderDetails() {
   async function changeStatus(
     status:string,
   ) {
+    let note=`Status changed to ${status} by operations`;
+    if(status==='CANCELLED'){
+      const reason=prompt('Cancellation reason');
+      if(!reason||reason.trim().length<3)return;
+      note=reason.trim();
+    }
 
     try {
 
@@ -104,8 +110,7 @@ export default function AdminOrderDetails() {
         `/admin/orders/${order.id}/status`,
         {
           status,
-          note:
-            `Status changed to ${status} by admin`,
+          note,
         },
       );
 
@@ -155,7 +160,6 @@ export default function AdminOrderDetails() {
     }
   }
 
-
   if (!order) {
 
     return (
@@ -192,11 +196,11 @@ export default function AdminOrderDetails() {
       <div className="flex flex-wrap items-end justify-between gap-4">
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+          <p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">
             Order operations
           </p>
 
-          <h1 className="mt-2 text-4xl font-black">
+          <h1 className="mt-2 text-4xl font-black tracking-tight tracking-tight">
             {order.orderNumber}
           </h1>
 
@@ -207,7 +211,7 @@ export default function AdminOrderDetails() {
 
         <Link
           href="/admin/orders"
-          className="rounded-xl border bg-white px-4 py-2 text-sm font-bold"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold"
         >
           Back to orders
         </Link>
@@ -216,7 +220,7 @@ export default function AdminOrderDetails() {
 
 
       {message && (
-        <p className="mt-5 rounded-2xl border bg-white p-4 text-sm font-semibold">
+        <p className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold">
           {message}
         </p>
       )}
@@ -233,7 +237,7 @@ export default function AdminOrderDetails() {
 
           <div
             key={label}
-            className="rounded-2xl border bg-white p-5"
+            className="rounded-2xl border border-slate-200 bg-white p-5"
           >
             <p className="text-xs text-slate-500">
               {label}
@@ -249,9 +253,14 @@ export default function AdminOrderDetails() {
       </div>
 
 
-      {/* ADMIN ACTIONS */}
+      {(order.cancellationReason||order.deliveredAt)&&<div className="mt-5 grid gap-3 md:grid-cols-2">
+        {order.cancellationReason&&<div className="rounded-2xl border border-rose-100 bg-rose-50 p-4"><p className="text-xs font-black uppercase text-rose-500">Cancellation reason</p><p className="mt-2 font-semibold text-rose-800">{order.cancellationReason}</p></div>}
+        {order.deliveredAt&&<div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4"><p className="text-xs font-black uppercase text-emerald-600">Delivered at</p><p className="mt-2 font-semibold text-emerald-800">{new Date(order.deliveredAt).toLocaleString()}</p></div>}
+      </div>}
 
-      <section className="mt-6 rounded-3xl border bg-white p-6">
+            {/* ADMIN ACTIONS */}
+
+      <section className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-6">
 
         <h2 className="text-xl font-black">
           Fulfillment actions
@@ -270,7 +279,7 @@ export default function AdminOrderDetails() {
                 className={`rounded-xl px-4 py-3 text-sm font-bold ${
                   status === 'CANCELLED'
                     ? 'border border-red-200 text-red-600'
-                    : 'bg-slate-950 text-white'
+                    : 'bg-[#1464f4] text-white'
                 }`}
               >
                 {nice(status)}
@@ -337,7 +346,7 @@ export default function AdminOrderDetails() {
 
         {/* CUSTOMER */}
 
-        <section className="rounded-3xl border bg-white p-6">
+        <section className="rounded-[1.5rem] border border-slate-200 bg-white p-6">
 
           <h2 className="text-xl font-black">
             Customer & delivery
@@ -372,7 +381,7 @@ export default function AdminOrderDetails() {
               target="_blank"
               rel="noreferrer"
               href={`https://www.google.com/maps?q=${order.deliveryLatitude},${order.deliveryLongitude}`}
-              className="mt-5 inline-flex rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white"
+              className="mt-5 inline-flex rounded-xl bg-[#1464f4] px-4 py-2.5 text-sm font-bold text-white"
             >
               View exact location
             </a>
@@ -401,11 +410,17 @@ export default function AdminOrderDetails() {
 
         {/* MONEY */}
 
-        <section className="rounded-3xl border bg-white p-6">
+        <section className="rounded-[1.5rem] border border-slate-200 bg-white p-6">
 
           <h2 className="text-xl font-black">
             Payment summary
           </h2>
+
+          <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <p className="text-sm font-black text-blue-800">Payment status: {order.paymentStatus}</p>
+            <p className="mt-1 text-xs leading-5 text-blue-700">Payment changes should be recorded through the Finance ledger so transaction and refund history stay consistent.</p>
+            <Link href="/admin/finance" className="mt-3 inline-block rounded-xl bg-[#1464f4] px-4 py-2.5 text-xs font-black text-white">Open Finance</Link>
+          </div>
 
           <div className="mt-5 space-y-3 text-sm">
 
@@ -448,7 +463,7 @@ export default function AdminOrderDetails() {
 
       {/* ITEMS */}
 
-      <section className="mt-6 rounded-3xl border bg-white p-6">
+      <section className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-6">
 
         <h2 className="text-xl font-black">
           Ordered items
@@ -492,7 +507,7 @@ export default function AdminOrderDetails() {
 
       {/* HISTORY */}
 
-      <section className="mt-6 rounded-3xl border bg-white p-6">
+      <section className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-6">
 
         <h2 className="text-xl font-black">
           Complete timeline
@@ -505,7 +520,7 @@ export default function AdminOrderDetails() {
 
               <div
                 key={entry.id}
-                className="border-l-2 border-slate-950 pl-4"
+                className="border-l-2 border-[#1464f4] pl-4"
               >
 
                 <p className="font-black">
@@ -537,3 +552,6 @@ export default function AdminOrderDetails() {
     </AdminShell>
   );
 }
+
+
+

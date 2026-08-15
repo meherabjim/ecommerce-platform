@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 
@@ -115,7 +115,7 @@ export default function LocationPicker({
           type="button"
           disabled={loading}
           onClick={getLocation}
-          className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+          className="rounded-xl bg-[#1464f4] px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
         >
           {loading
             ? 'Finding location...'

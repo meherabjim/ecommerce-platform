@@ -8,7 +8,7 @@ import { AttributeGroup } from './models/attribute-group.model';
 import { AttributeValue } from './models/attribute-value.model';
 import { Product, ProductStatus } from './models/product.model';
 import { ProductVariant } from './models/product-variant.model';
-import { CreateCategoryDto } from './dto/create-category.dto';
+import { CreateCategoryDto, UpdateCategoryDto } from './dto/create-category.dto';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
@@ -55,9 +55,38 @@ export class CatalogService implements OnModuleInit {
 
   async createCategory(dto:CreateCategoryDto){
     if(await this.categoryModel.findOne({where:{barcodePrefix:dto.barcodePrefix}})) throw new ConflictException('Barcode prefix is already used.');
-    return this.categoryModel.create({...dto,slug:await this.uniqueSlug(this.categoryModel,dto.name),nextBarcodeSerial:1} as any);
+    if(dto.parentId && !await this.categoryModel.findByPk(dto.parentId)) throw new NotFoundException('Parent category not found.');
+    return this.categoryModel.create({...dto,parentId:dto.parentId||null,slug:await this.uniqueSlug(this.categoryModel,dto.name),nextBarcodeSerial:1,sortOrder:dto.sortOrder??0,featuredInNav:dto.featuredInNav??false} as any);
   }
-  listCategories(publicOnly=false){return this.categoryModel.findAll({where:publicOnly?{active:true}:undefined,order:[['name','ASC']]});}
+
+  async listCategories(publicOnly=false){
+    const rows=await this.categoryModel.findAll({
+      where:publicOnly?{active:true}:undefined,
+      order:[['sortOrder','ASC'],['name','ASC']]
+    });
+    return rows.map(row=>row.toJSON());
+  }
+
+  async updateCategory(id:string,dto:UpdateCategoryDto){
+    const row=await this.categoryModel.findByPk(id);
+    if(!row) throw new NotFoundException('Category not found.');
+    if(dto.parentId===id) throw new BadRequestException('A category cannot be its own parent.');
+    if(dto.parentId && !await this.categoryModel.findByPk(dto.parentId)) throw new NotFoundException('Parent category not found.');
+    if(dto.name && dto.name!==row.name) row.slug=await this.uniqueSlug(this.categoryModel,dto.name,row.id);
+    Object.assign(row,dto);
+    if((dto as any).parentId==='') row.parentId=null;
+    await row.save();
+    return row;
+  }
+
+  async deleteCategory(id:string){
+    const row=await this.categoryModel.findByPk(id);
+    if(!row) throw new NotFoundException('Category not found.');
+    if(await this.productModel.count({where:{categoryId:id}})) throw new BadRequestException('Move products out of this category before deleting it.');
+    if(await this.categoryModel.count({where:{parentId:id}})) throw new BadRequestException('Move or delete subcategories first.');
+    await row.destroy();
+    return {deleted:true};
+  }
 
   async createBrand(dto:CreateBrandDto){return this.brandModel.create({...dto,slug:await this.uniqueSlug(this.brandModel,dto.name)} as any);}
   listBrands(publicOnly=false){return this.brandModel.findAll({where:publicOnly?{active:true}:undefined,order:[['name','ASC']]});}
@@ -145,4 +174,51 @@ export class CatalogService implements OnModuleInit {
     if(status===ProductStatus.ACTIVE && await this.variantModel.count({where:{productId:id}})===0) throw new BadRequestException('Add at least one variant before activating a product.');
     p.status=status; await p.save(); return p;
   }
+
+  async previewBarcode(productId:string,variantCode:string){
+    const p=await this.productModel.findByPk(productId);
+    if(!p) throw new NotFoundException('Product not found.');
+    const c=await this.categoryModel.findByPk(p.categoryId);
+    if(!c) throw new NotFoundException('Category not found.');
+    const code=normalizeVariantCode(variantCode);
+    const serial=c.nextBarcodeSerial;
+    if(serial>9999) throw new BadRequestException('Category exceeded 9,999 barcode serials.');
+    const firstTen=`${c.barcodePrefix}${code}${String(serial).padStart(4,'0')}`;
+    return {
+      barcode:`${firstTen}${checksum2(firstTen)}`,
+      categoryPrefix:c.barcodePrefix,
+      variantCode:code,
+      nextSerial:serial,
+      note:'Preview only. The serial is consumed only when the variant is created.'
+    };
+  }
+
+  async findVariantByBarcode(barcode:string){
+    const clean=barcode.replace(/\D/g,'');
+    if(clean.length!==12) throw new BadRequestException('Barcode must contain exactly 12 digits.');
+    const v=await this.variantModel.findOne({where:{barcode:clean}});
+    if(!v) throw new NotFoundException('Barcode not found.');
+    const p=await this.productModel.findByPk(v.productId);
+    const stock=(await this.inventory.stockSummary()).find(x=>x.variantId===v.id)||null;
+    return {...v.toJSON(),product:p?{id:p.id,name:p.name,slug:p.slug}:null,inventory:stock};
+  }
+
+  async barcodeLabels(variantIds:string[]){
+    const variants=await this.variantModel.findAll({where:{id:variantIds}});
+    const products=await this.productModel.findAll();
+    const stock=await this.inventory.stockSummary();
+    return variants.map(v=>{
+      const p=products.find(x=>x.id===v.productId);
+      return {
+        variantId:v.id,
+        productName:p?.name||'Product',
+        sku:v.sku,
+        barcode:v.barcode,
+        attributes:v.attributes,
+        price:v.salePrice||v.price,
+        stock:stock.find(x=>x.variantId===v.id)?.available??0,
+      };
+    });
+  }
+
 }

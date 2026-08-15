@@ -1,5 +1,27 @@
 export enum UserRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
+  CATALOG_MANAGER = 'CATALOG_MANAGER',
+  INVENTORY_MANAGER = 'INVENTORY_MANAGER',
+  ORDER_MANAGER = 'ORDER_MANAGER',
+  CUSTOMER_SUPPORT = 'CUSTOMER_SUPPORT',
+  MARKETING_MANAGER = 'MARKETING_MANAGER',
+  FINANCE = 'FINANCE',
   CUSTOMER = 'CUSTOMER',
   DELIVERY_AGENT = 'DELIVERY_AGENT',
+}
+
+export const STAFF_ROLES: UserRole[] = [
+  UserRole.SUPER_ADMIN,
+  UserRole.ADMIN,
+  UserRole.CATALOG_MANAGER,
+  UserRole.INVENTORY_MANAGER,
+  UserRole.ORDER_MANAGER,
+  UserRole.CUSTOMER_SUPPORT,
+  UserRole.MARKETING_MANAGER,
+  UserRole.FINANCE,
+];
+
+export function isStaffRole(role?: UserRole | string | null) {
+  return STAFF_ROLES.includes(role as UserRole);
 }

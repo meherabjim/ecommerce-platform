@@ -23,23 +23,14 @@ export class User extends Model<User> {
   @Column(DataType.UUID)
   declare id: string;
 
-  @Column({
-    type: DataType.STRING(120),
-    allowNull: false,
-  })
+  @Column({ type: DataType.STRING(120), allowNull: false })
   declare name: string;
 
   @Unique
-  @Column({
-    type: DataType.STRING(180),
-    allowNull: false,
-  })
+  @Column({ type: DataType.STRING(180), allowNull: false })
   declare email: string;
 
-  @Column({
-    type: DataType.STRING(30),
-    allowNull: true,
-  })
+  @Column({ type: DataType.STRING(30), allowNull: true })
   declare phone: string | null;
 
   @Column({
@@ -63,6 +54,27 @@ export class User extends Model<User> {
   })
   declare status: UserStatus;
 
+  @Column({
+    field: 'email_verified_at',
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare emailVerifiedAt: Date | null;
+
+  @Column({
+    field: 'last_login_at',
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare lastLoginAt: Date | null;
+
+  @Column({
+    field: 'password_changed_at',
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  declare passwordChangedAt: Date | null;
+
   @BeforeCreate
   static async normalizeEmail(user: User) {
     user.email = user.email.trim().toLowerCase();
@@ -80,6 +92,10 @@ export class User extends Model<User> {
       phone: this.phone,
       role: this.role,
       status: this.status,
+      emailVerified: Boolean(this.emailVerifiedAt),
+      emailVerifiedAt: this.emailVerifiedAt,
+      lastLoginAt: this.lastLoginAt,
+      passwordChangedAt: this.passwordChangedAt,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

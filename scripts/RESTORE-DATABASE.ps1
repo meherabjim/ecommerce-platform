@@ -1,0 +1,4 @@
+param([Parameter(Mandatory=$true)][string]$BackupFile,[string]$ProjectRoot='E:\project4')
+$envFile="$ProjectRoot\backend\.env";$h='127.0.0.1';$p='5432';$u='postgres';$d='neuro_commerce';$pw=$null
+if(Test-Path $envFile){foreach($line in Get-Content $envFile){if($line -match '^\s*DB_PASSWORD=(.*)$'){$pw=$Matches[1].Trim()}elseif($line -match '^\s*DB_HOST=(.*)$'){$h=$Matches[1].Trim()}elseif($line -match '^\s*DB_PORT=(.*)$'){$p=$Matches[1].Trim()}elseif($line -match '^\s*DB_USERNAME=(.*)$'){$u=$Matches[1].Trim()}elseif($line -match '^\s*DB_DATABASE=(.*)$'){$d=$Matches[1].Trim()}}}
+if($pw){$env:PGPASSWORD=$pw};pg_restore -h $h -p $p -U $u -d $d --clean --if-exists $BackupFile;if($pw){Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue};if($LASTEXITCODE -ne 0){exit 1};Write-Host 'Database restore complete.'

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Module,
 } from '@nestjs/common';
 
@@ -34,6 +34,8 @@ import {
   Order,
 } from '../commerce/models/order.model';
 
+import { User } from '../users/models/user.model';
+
 import {
   CustomerService,
 } from './customer.service';
@@ -53,6 +55,7 @@ import {
       Product,
       ProductVariant,
       Order,
+      User,
     ]),
   ],
 

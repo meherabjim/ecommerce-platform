@@ -1,0 +1,4 @@
+param([string]$ProjectRoot='E:\project4',[string]$Destination="$env:USERPROFILE\Downloads")
+$envFile="$ProjectRoot\backend\.env";$h='127.0.0.1';$p='5432';$u='postgres';$d='neuro_commerce';$pw=$null
+if(Test-Path $envFile){foreach($line in Get-Content $envFile){if($line -match '^\s*DB_PASSWORD=(.*)$'){$pw=$Matches[1].Trim()}elseif($line -match '^\s*DB_HOST=(.*)$'){$h=$Matches[1].Trim()}elseif($line -match '^\s*DB_PORT=(.*)$'){$p=$Matches[1].Trim()}elseif($line -match '^\s*DB_USERNAME=(.*)$'){$u=$Matches[1].Trim()}elseif($line -match '^\s*DB_DATABASE=(.*)$'){$d=$Matches[1].Trim()}}}
+if($pw){$env:PGPASSWORD=$pw};$stamp=Get-Date -Format 'yyyy-MM-dd_HH-mm-ss';$out=Join-Path $Destination "neuro_commerce_$stamp.backup";pg_dump -h $h -p $p -U $u -d $d -F c -f $out;if($pw){Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue};if($LASTEXITCODE -ne 0){exit 1};Write-Host $out

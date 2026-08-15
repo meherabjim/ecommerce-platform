@@ -1,4 +1,4 @@
-﻿import { Column, DataType, Default, Model, PrimaryKey, Table, Unique } from 'sequelize-typescript';
+import { Column, DataType, Default, Model, PrimaryKey, Table, Unique } from 'sequelize-typescript';
 
 export enum OrderStatus {
   PENDING='PENDING', CONFIRMED='CONFIRMED', PROCESSING='PROCESSING', PACKED='PACKED', READY_FOR_PICKUP='READY_FOR_PICKUP', SHIPPED='SHIPPED', IN_TRANSIT='IN_TRANSIT', OUT_FOR_DELIVERY='OUT_FOR_DELIVERY', DELIVERED='DELIVERED', DELIVERY_FAILED='DELIVERY_FAILED', CANCELLED='CANCELLED'
@@ -37,5 +37,12 @@ export class Order extends Model<Order> {
   @Column({field:'tracking_number',type:DataType.STRING(80),allowNull:true}) declare trackingNumber:string|null;
   @Column({field:'delivery_failure_reason',type:DataType.STRING(300),allowNull:true}) declare deliveryFailureReason:string|null;
   @Column({field:'cod_collected',type:DataType.DECIMAL(12,2),allowNull:true}) declare codCollected:string|null;
+  @Column({field:'cancellation_reason',type:DataType.STRING(300),allowNull:true}) declare cancellationReason:string|null;
+  @Column({field:'cancelled_by',type:DataType.UUID,allowNull:true}) declare cancelledBy:string|null;
+  @Column({field:'cancelled_at',type:DataType.DATE,allowNull:true}) declare cancelledAt:Date|null;
+  @Column({field:'delivered_at',type:DataType.DATE,allowNull:true}) declare deliveredAt:Date|null;
+  @Default(0) @Column({field:'delivery_attempt_count',type:DataType.INTEGER,allowNull:false}) declare deliveryAttemptCount:number;
+  @Column({field:'last_delivery_note',type:DataType.STRING(500),allowNull:true}) declare lastDeliveryNote:string|null;
+  @Column({field:'last_delivery_action_at',type:DataType.DATE,allowNull:true}) declare lastDeliveryActionAt:Date|null;
 }
 

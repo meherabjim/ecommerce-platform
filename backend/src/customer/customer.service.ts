@@ -1,4 +1,6 @@
-﻿import {
+import { User } from '../users/models/user.model';
+import { UserRole } from '../common/enums/user-role.enum';
+import {
   BadRequestException,
   Injectable,
   NotFoundException,
@@ -51,6 +53,7 @@ export class CustomerService implements OnModuleInit {
 
     @InjectModel(Notification)
     private notificationModel:typeof Notification,
+    @InjectModel(User) private userModel:typeof User,
 
     @InjectModel(ReturnRequest)
     private returnModel:typeof ReturnRequest,
@@ -137,6 +140,10 @@ export class CustomerService implements OnModuleInit {
   }
 
 
+  // ========================================================
+  // SHIPPING QUOTE
+  // ========================================================
+
   async shippingQuote(
     district:string,
     area:string|undefined,
@@ -176,12 +183,13 @@ export class CustomerService implements OnModuleInit {
     }
 
     if (!zone) {
-
       return {
         charge:
           subtotal >= 4000
             ? 0
             : 150,
+
+        freeShippingThreshold:4000,
         rule:'OUTSIDE_DEFAULT',
       };
     }
@@ -207,6 +215,134 @@ export class CustomerService implements OnModuleInit {
         zone.area,
 
       rule:'ZONE',
+      deliveryMode:zone.deliveryMode||'AUTO',
+      internalServiceable:Boolean(zone.internalServiceable),
+      preferredProvider:zone.preferredProvider||null,
+      suggestedProvider:(zone.deliveryMode==='INTERNAL'||(zone.deliveryMode==='AUTO'&&zone.internalServiceable))?'INTERNAL':(zone.preferredProvider||'EXTERNAL'),
+    };
+  }
+
+
+  // ========================================================
+  // ADMIN SHIPPING ZONES
+  // ========================================================
+
+  listShippingZones() {
+    return this.shippingModel.findAll({
+      order:[
+        ['district','ASC'],
+        ['area','ASC'],
+      ],
+    });
+  }
+
+
+  async createShippingZone(input:{
+    district:string;
+    area?:string;
+    charge:number;
+    freeShippingThreshold:number;
+    active?:boolean;
+  }) {
+
+    const district =
+      input.district.trim();
+
+    const area =
+      input.area?.trim() || null;
+
+    const existing =
+      await this.shippingModel.findOne({
+        where:{
+          district,
+          area,
+        },
+      });
+
+    if (existing) {
+      throw new BadRequestException(
+        'A shipping rule already exists for this district/area.',
+      );
+    }
+
+    return this.shippingModel.create({
+      district,
+      area,
+      charge:String(input.charge),
+      freeShippingThreshold:
+        String(
+          input.freeShippingThreshold,
+        ),
+      active:
+        input.active !== false,
+    } as any);
+  }
+
+
+  async updateShippingZone(
+    id:string,
+    input:{
+      district:string;
+      area?:string;
+      charge:number;
+      freeShippingThreshold:number;
+      active?:boolean;
+    },
+  ) {
+
+    const zone =
+      await this.shippingModel.findByPk(
+        id,
+      );
+
+    if (!zone) {
+      throw new NotFoundException(
+        'Shipping zone not found.',
+      );
+    }
+
+    zone.district =
+      input.district.trim();
+
+    zone.area =
+      input.area?.trim() || null;
+
+    zone.charge =
+      String(input.charge);
+
+    zone.freeShippingThreshold =
+      String(
+        input.freeShippingThreshold,
+      );
+
+    zone.active =
+      input.active !== false;
+
+    await zone.save();
+
+    return zone;
+  }
+
+
+  async deleteShippingZone(
+    id:string,
+  ) {
+
+    const zone =
+      await this.shippingModel.findByPk(
+        id,
+      );
+
+    if (!zone) {
+      throw new NotFoundException(
+        'Shipping zone not found.',
+      );
+    }
+
+    await zone.destroy();
+
+    return {
+      deleted:true,
     };
   }
 
@@ -223,12 +359,17 @@ export class CustomerService implements OnModuleInit {
         order:[['createdAt','DESC']],
       });
 
+    if (!rows.length) {
+      return [];
+    }
+
     const products =
       await this.productModel.findAll({
         where:{
           id:
             rows.map(
-              x => x.productId,
+              row =>
+                row.productId,
             ),
         } as any,
       });
@@ -353,6 +494,45 @@ export class CustomerService implements OnModuleInit {
   }
 
 
+
+  async ensurePromotionNotification(
+    userId:string,
+    input:{promotionId:string;code:string;name?:string;type?:string;value?:number|string;minOrder?:number|string},
+  ) {
+    if(!input?.promotionId || !input?.code) {
+      throw new BadRequestException('Promotion id and code are required.');
+    }
+
+    const existing=await this.notificationModel.findOne({
+      where:{
+        userId,
+        type:NotificationType.SYSTEM,
+        referenceId:input.promotionId,
+      },
+    });
+
+    if(existing) return {created:false,notification:existing};
+
+    const value=Number(input.value||0);
+    const discount=String(input.type||'').toUpperCase()==='PERCENT'
+      ? `${value}% off`
+      : `BDT ${value} off`;
+    const minimum=Number(input.minOrder||0)>0
+      ? ` Minimum order BDT ${Number(input.minOrder)}.`
+      : '';
+
+    const notification=await this.createNotification(
+      userId,
+      NotificationType.SYSTEM,
+      `Coupon ${String(input.code).toUpperCase()} is live`,
+      `${input.name||'A new promotion'}: ${discount}.${minimum} Use code ${String(input.code).toUpperCase()} at checkout.`,
+      input.promotionId,
+    );
+
+    return {created:true,notification};
+  }
+
+
   async markNotificationRead(
     userId:string,
     id:string,
@@ -465,12 +645,17 @@ export class CustomerService implements OnModuleInit {
         order:[['createdAt','DESC']],
       });
 
+    if (!rows.length) {
+      return [];
+    }
+
     const orders =
       await this.orderModel.findAll({
         where:{
           id:
             rows.map(
-              x => x.orderId,
+              row =>
+                row.orderId,
             ),
         } as any,
       });
@@ -523,6 +708,7 @@ export class CustomerService implements OnModuleInit {
       status ===
         ReturnStatus.REFUNDED
     ) {
+
       order.paymentStatus =
         PaymentStatus.REFUNDED;
 
@@ -540,4 +726,26 @@ export class CustomerService implements OnModuleInit {
 
     return row;
   }
+
+  async adminNotifications(limit=100) {
+    return this.notificationModel.findAll({
+      order:[['createdAt','DESC']],
+      limit:Math.min(Math.max(Number(limit)||100,1),500),
+    });
+  }
+
+  async broadcastNotification(type:NotificationType,title:string,message:string) {
+    const users=await this.userModel.findAll({where:{role:UserRole.CUSTOMER,status:'ACTIVE'} as any});
+    if(!users.length) return {created:0};
+    await this.notificationModel.bulkCreate(users.map((u:any)=>({
+      userId:u.id,type,title:title.trim(),message:message.trim(),referenceId:null,isRead:false,
+    })) as any);
+    return {created:users.length};
+  }
+
+  async markAllNotificationsRead(userId:string) {
+    const [updated]=await this.notificationModel.update({isRead:true} as any,{where:{userId,isRead:false}});
+    return {updated};
+  }
+
 }

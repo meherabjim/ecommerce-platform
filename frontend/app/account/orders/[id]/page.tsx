@@ -1,10 +1,16 @@
-﻿'use client';
+'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, FileText, PackageCheck, ShoppingBag } from 'lucide-react';
 import Navbar from '@/components/navbar';
+import StoreFooter from '@/components/store-footer';
+import AccountShell from '@/components/account-shell';
 import OrderTrackingPanel from '@/components/order-tracking-panel';
+import CustomerOrderActions from '@/components/customer-order-actions';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type ReviewDraft = {
   rating: number;
@@ -13,6 +19,7 @@ type ReviewDraft = {
 
 export default function OrderDetails() {
   const params = useParams<{ id: string }>();
+  const {language}=useI18n();
 
   const [order, setOrder] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -30,6 +37,9 @@ export default function OrderDetails() {
 
   const [submitting, setSubmitting] =
     useState<string | null>(null);
+  const [returnOpen,setReturnOpen]=useState(false);
+  const [returnReason,setReturnReason]=useState('');
+  const [returnMessage,setReturnMessage]=useState('');
 
   async function load() {
     const [orderResponse, reviewsResponse] =
@@ -135,9 +145,20 @@ export default function OrderDetails() {
     }
   }
 
+
+  async function submitReturnRequest(){
+    if(returnReason.trim().length<5){setReturnMessage('Please enter a clear return reason.');return}
+    setReturnMessage('');
+    try{
+      await api.post(`/orders/${order.id}/return`,{reason:returnReason.trim()});
+      setReturnMessage('Return request submitted. Track it from Returns & refunds.');
+      setReturnOpen(false);setReturnReason('');
+    }catch(error:any){setReturnMessage(error?.response?.data?.message||'Could not submit return request.')}
+  }
+
   if (!order) {
     return (
-      <main className="grid min-h-screen place-items-center bg-[#f7f7f5] text-slate-950">
+      <main className="grid min-h-screen place-items-center bg-[#f6f7f9] text-slate-950">
         Loading order...
       </main>
     );
@@ -146,28 +167,21 @@ export default function OrderDetails() {
   const delivered = order.status === 'DELIVERED';
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] text-slate-950">
+    <main className="min-h-screen bg-[#f6f7f9] text-slate-950">
       <Navbar />
 
-      <div className="mx-auto max-w-5xl px-5 py-12">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-            Order
-          </p>
-
-          <h1 className="mt-2 text-4xl font-black">
-            {order.orderNumber}
-          </h1>
-
-          {delivered && (
-            <p className="mt-3 text-sm font-medium text-emerald-700">
-              Delivered successfully. You can now review the
-              products from this order.
-            </p>
-          )}
+      <AccountShell>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <Link href="/account/orders" className="inline-flex items-center gap-2 text-xs font-black text-slate-500 hover:text-[#1464f4]"><ArrowLeft size={14}/>{language==='bn'?'অর্ডারে ফিরে যান':'Back to orders'}</Link>
+            <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">{language==='bn'?'অর্ডার বিস্তারিত':'Order details'}</p>
+            <h1 className="mt-2 text-3xl font-black sm:text-4xl">{order.orderNumber}</h1>
+            {delivered && <p className="mt-3 text-sm font-medium text-emerald-700">{language==='bn'?'অর্ডার ডেলিভারি সম্পন্ন হয়েছে। এখন পণ্যের রিভিউ দিতে পারবেন।':'Delivered successfully. You can now review products from this order.'}</p>}
+          </div>
+          <Link href={`/account/orders/${order.id}/invoice`} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black shadow-sm"><FileText size={16}/>{language==='bn'?'ইনভয়েস / প্রিন্ট':'Invoice / Print'}</Link>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
           {[
             ['Status', order.status],
             [
@@ -178,7 +192,7 @@ export default function OrderDetails() {
           ].map(([label, value]) => (
             <div
               key={label}
-              className="rounded-3xl border border-slate-200 bg-white p-5"
+              className="rounded-2xl border border-slate-200 bg-white p-4 premium-card"
             >
               <p className="text-sm text-slate-500">
                 {label}
@@ -191,11 +205,13 @@ export default function OrderDetails() {
           ))}
         </div>
 
+        <CustomerOrderActions order={order} onChanged={load}/>
+
         {/* ==================================================
             ORDER ITEMS
         ================================================== */}
 
-        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
+        <section className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white p-5 premium-card">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-black">
@@ -227,12 +243,16 @@ export default function OrderDetails() {
               return (
                 <div
                   key={item.id}
-                  className="py-6"
+                  className="py-4"
                 >
                   <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
-                    <div className="min-w-0">
+                    <div className="flex min-w-0 gap-4">
+                      <div className="h-24 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                        {item.imageUrl?<img src={item.imageUrl} alt={item.productName} className="h-full w-full object-cover"/>:<div className="grid h-full place-items-center text-slate-300"><ShoppingBag size={20}/></div>}
+                      </div>
+                      <div className="min-w-0">
                       <p className="text-lg font-black">
-                        {item.productName}
+                        {language==='bn'?(item.productNameBn||item.productName):item.productName}
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500">
@@ -248,6 +268,7 @@ export default function OrderDetails() {
                       <p className="mt-2 text-sm text-slate-500">
                         Qty: {item.quantity}
                       </p>
+                      </div>
                     </div>
 
                     <div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
@@ -280,7 +301,7 @@ export default function OrderDetails() {
                                 : item.variantId,
                             )
                           }
-                          className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
+                          className="rounded-xl bg-[#1464f4] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0e55d4]"
                         >
                           {reviewOpen
                             ? 'Cancel'
@@ -374,7 +395,7 @@ export default function OrderDetails() {
                             }
                             placeholder="How was the product?"
                             maxLength={1000}
-                            className="mt-2 min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-slate-950"
+                            className="mt-2 min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-[#1464f4]"
                           />
 
                           <p className="mt-1 text-right text-xs text-slate-400">
@@ -388,7 +409,7 @@ export default function OrderDetails() {
                             submitting ===
                             item.variantId
                           }
-                          className="mt-4 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="mt-4 rounded-xl bg-[#1464f4] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0e55d4] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {submitting ===
                           item.variantId
@@ -435,39 +456,15 @@ export default function OrderDetails() {
 
 
           {order.status === 'DELIVERED' && (
-            <button
-              type="button"
-              onClick={async()=>{
-                const reason =
-                  prompt(
-                    'Why do you want to return this order?'
-                  );
-
-                if(!reason) return;
-
-                try{
-                  await api.post(
-                    `/orders/${order.id}/return`,
-                    {reason}
-                  );
-
-                  alert(
-                    'Return request submitted.'
-                  );
-                }catch(error:any){
-                  alert(
-                    error?.response?.data?.message ||
-                    'Could not submit return request.'
-                  );
-                }
-              }}
-              className="rounded-xl border px-4 py-3 text-sm font-bold"
-            >
+            <button type="button" onClick={()=>setReturnOpen(v=>!v)} className="rounded-xl border px-4 py-3 text-sm font-bold">
               Request return
             </button>
           )}
 
         </div>
+
+        {returnOpen&&<section className="mt-4 max-w-2xl rounded-2xl border border-blue-100 bg-blue-50 p-5"><p className="font-black">Request a return</p><p className="mt-1 text-sm text-slate-500">Describe the issue clearly. Your request will be reviewed by support before goods are received and refunded.</p><textarea value={returnReason} onChange={e=>setReturnReason(e.target.value)} maxLength={500} placeholder="Reason for return..." className="mt-4 min-h-28 w-full rounded-xl border bg-white p-3 outline-none"/><div className="mt-3 flex gap-2"><button onClick={submitReturnRequest} className="rounded-xl bg-[#1464f4] px-4 py-2.5 text-sm font-black text-white">Submit request</button><button onClick={()=>setReturnOpen(false)} className="rounded-xl border bg-white px-4 py-2.5 text-sm font-black">Cancel</button></div></section>}
+        {returnMessage&&<p className="mt-3 rounded-xl bg-blue-50 p-3 text-sm font-semibold text-blue-700">{returnMessage}</p>}
 
         <OrderTrackingPanel order={order} />
 
@@ -475,7 +472,7 @@ export default function OrderDetails() {
             STATUS TIMELINE
         ================================================== */}
 
-        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
+        <section className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white p-5 premium-card">
           <h2 className="text-xl font-black">
             Status timeline
           </h2>
@@ -484,7 +481,7 @@ export default function OrderDetails() {
             {order.history.map((item: any) => (
               <div
                 key={item.id}
-                className="border-l-2 border-slate-950 pl-4"
+                className="border-l-2 border-[#1464f4] pl-4"
               >
                 <p className="font-black">
                   {item.newStatus}
@@ -497,9 +494,12 @@ export default function OrderDetails() {
             ))}
           </div>
         </section>
-      </div>
+      </AccountShell>
+      <StoreFooter/>
     </main>
   );
 }
+
+
 
 

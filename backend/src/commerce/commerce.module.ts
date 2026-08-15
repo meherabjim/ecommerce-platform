@@ -13,6 +13,8 @@ import { UsersModule } from '../users/users.module';
 import { CommerceService } from './commerce.service';
 import { CommerceController } from './commerce.controller';
 import { CustomerModule } from '../customer/customer.module';
-@Module({imports:[SequelizeModule.forFeature([Cart,CartItem,Order,OrderItem,OrderStatusHistory,ProductVariant,Product]),InventoryModule,PromotionsModule,UsersModule,CustomerModule],providers:[CommerceService],controllers:[CommerceController]})
+import { PaymentsModule } from '../payments/payments.module';
+@Module({imports:[SequelizeModule.forFeature([Cart,CartItem,Order,OrderItem,OrderStatusHistory,ProductVariant,Product]),InventoryModule,PromotionsModule,UsersModule,CustomerModule,PaymentsModule],providers:[CommerceService],controllers:[CommerceController]})
 export class CommerceModule {}
+
 
