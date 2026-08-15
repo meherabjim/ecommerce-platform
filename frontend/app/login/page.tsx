@@ -241,7 +241,7 @@ export default function LoginPage(){
           font-black
           ">
 
-            Neuro Commerce
+            E-Commerce Platform
 
           </h1>
 

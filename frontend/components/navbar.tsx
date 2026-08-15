@@ -36,7 +36,7 @@ export default function Navbar(){
   const [authMode,setAuthMode]=useState<'login'|'register'|null>(null);
   const [authNext,setAuthNext]=useState<string|null>(null);
 
-  const storeName=identity.storeName||'Neuro Commerce';
+  const storeName=identity.storeName||'E-Commerce Platform';
   const tagline=identity.tagline||'Smart shopping, made simple';
   const logoUrl=identity.logoUrl||'';
   const configuredAnnouncement=commerce.freeShippingMessage||'Fast delivery • Secure checkout • Easy returns';

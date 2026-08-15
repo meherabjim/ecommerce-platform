@@ -20,15 +20,15 @@ type FormState={
 };
 
 const initial:FormState={
- storeName:'Neuro Commerce',tagline:'Premium retail',logoUrl:'',
+ storeName:'E-Commerce Platform',tagline:'Premium retail',logoUrl:'',
  freeShippingMessage:'Fast local delivery · Secure checkout · Easy returns',
  supportEmail:'meherabjim2022@gmail.com',supportPhone:'01764305948',
  address:'Vatara, Dhaka',facebookUrl:'',messengerUrl:'',whatsappNumber:'01764305948',supportHours:'Every day, 10:00 AM – 10:00 PM',defaultLanguage:'en',
  orderPrefix:'NC',defaultShippingCharge:'120',
  freeShippingThreshold:'3000',lowStockDefault:'5',guestCheckoutEnabled:false,
- seoTitle:'Neuro Commerce',seoDescription:'Modern ecommerce shopping experience.',
+ seoTitle:'E-Commerce Platform',seoDescription:'Modern ecommerce shopping experience.',
  footerAbout:'Secure checkout, live inventory, delivery tracking and customer support.',
- footerCopyright:'© 2026 Neuro Commerce',
+ footerCopyright:'© 2026 E-Commerce Platform. All rights reserved.',
  newsletterEnabled:true,reviewModeration:true,
  notificationOrder:true,notificationPayment:true,notificationDelivery:true,notificationReturn:true,
 };

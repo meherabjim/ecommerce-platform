@@ -158,11 +158,12 @@ export const ADMIN_PATH_ROLES: Record<string, UserRole[]> = {
   '/admin/returns':['SUPER_ADMIN','ADMIN','ORDER_MANAGER','CUSTOMER_SUPPORT'],
   '/admin/notifications':['SUPER_ADMIN','ADMIN','CUSTOMER_SUPPORT','MARKETING_MANAGER'],
   '/admin/finance':['SUPER_ADMIN','ADMIN','FINANCE'],
-  '/admin/reports':['SUPER_ADMIN','ADMIN','INVENTORY_MANAGER','ORDER_MANAGER','MARKETING_MANAGER','FINANCE'],
+  '/admin/reports':['SUPER_ADMIN','ADMIN','FINANCE'],
   '/admin/integrations':['SUPER_ADMIN','ADMIN'],
   '/admin/cms':['SUPER_ADMIN','ADMIN','MARKETING_MANAGER'],
   '/admin/security':['SUPER_ADMIN','ADMIN'],
   '/admin/settings':['SUPER_ADMIN','ADMIN'],
+  '/admin/profile':['SUPER_ADMIN','ADMIN','CATALOG_MANAGER','INVENTORY_MANAGER','ORDER_MANAGER','CUSTOMER_SUPPORT','MARKETING_MANAGER','FINANCE'],
 };
 
 export function canAccessAdminPath(role:string|undefined|null, pathname:string){
@@ -170,4 +171,40 @@ export function canAccessAdminPath(role:string|undefined|null, pathname:string){
   if(!isStaffRole(normalized)) return false;
   const key=Object.keys(ADMIN_PATH_ROLES).sort((a,b)=>b.length-a.length).find(x=>pathname===x||pathname.startsWith(x+'/'));
   return key ? ADMIN_PATH_ROLES[key].includes(normalized) : true;
+}
+
+
+export type AdminCapability =
+  | 'VIEW_USERS'
+  | 'MANAGE_STAFF'
+  | 'MANAGE_USER_STATUS'
+  | 'CATALOG'
+  | 'INVENTORY'
+  | 'ORDERS'
+  | 'DELIVERY'
+  | 'CUSTOMERS'
+  | 'PROMOTIONS'
+  | 'RETURNS'
+  | 'REVIEWS'
+  | 'NOTIFICATIONS'
+  | 'FINANCE'
+  | 'REPORTS'
+  | 'CMS'
+  | 'SETTINGS';
+
+const ADMIN_CAPABILITIES: Record<Exclude<UserRole,'CUSTOMER'|'DELIVERY_AGENT'>, AdminCapability[]> = {
+  SUPER_ADMIN:['VIEW_USERS','MANAGE_STAFF','MANAGE_USER_STATUS','CATALOG','INVENTORY','ORDERS','DELIVERY','CUSTOMERS','PROMOTIONS','RETURNS','REVIEWS','NOTIFICATIONS','FINANCE','REPORTS','CMS','SETTINGS'],
+  ADMIN:['VIEW_USERS','MANAGE_USER_STATUS','CATALOG','INVENTORY','ORDERS','DELIVERY','CUSTOMERS','PROMOTIONS','RETURNS','REVIEWS','NOTIFICATIONS','FINANCE','REPORTS','CMS','SETTINGS'],
+  CATALOG_MANAGER:['CATALOG'],
+  INVENTORY_MANAGER:['INVENTORY'],
+  ORDER_MANAGER:['ORDERS','DELIVERY','RETURNS'],
+  CUSTOMER_SUPPORT:['VIEW_USERS','ORDERS','CUSTOMERS','RETURNS','REVIEWS','NOTIFICATIONS'],
+  MARKETING_MANAGER:['PROMOTIONS','REVIEWS','NOTIFICATIONS','CMS'],
+  FINANCE:['ORDERS','FINANCE','REPORTS'],
+};
+
+export function hasAdminCapability(role:string|undefined|null, capability:AdminCapability){
+  const normalized=String(role||'').toUpperCase() as UserRole;
+  if(!isStaffRole(normalized)) return false;
+  return (ADMIN_CAPABILITIES[normalized as Exclude<UserRole,'CUSTOMER'|'DELIVERY_AGENT'>]||[]).includes(capability);
 }

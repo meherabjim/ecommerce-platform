@@ -14,7 +14,29 @@ export function StoreConfigProvider({children}:{children:React.ReactNode}){
 
   useEffect(()=>{
     api.get('/cms/public/settings').then(r=>{
-      const value=r.data||{};
+      const raw=r.data||{};
+      const value={...raw};
+
+      // Compatibility cleanup for databases created before the project was
+      // renamed. Admin-configured custom names are preserved.
+      const legacyIdentity={...(value['store.identity']||{})};
+      if(!legacyIdentity.storeName||legacyIdentity.storeName==='Neuro Commerce'){
+        legacyIdentity.storeName='E-Commerce Platform';
+      }
+      if(legacyIdentity.tagline==='Premium retail'){
+        legacyIdentity.tagline='Smart shopping, made simple';
+      }
+      value['store.identity']=legacyIdentity;
+
+      const legacyContact={...(value['store.contact']||{})};
+      if(legacyContact.email==='support@neurocommerce.local') legacyContact.email='';
+      value['store.contact']=legacyContact;
+
+      const legacySeo={...(value['store.seo']||{})};
+      if(legacySeo.siteTitle==='Neuro Commerce') legacySeo.siteTitle='E-Commerce Platform';
+      if(legacySeo.title==='Neuro Commerce') legacySeo.title='E-Commerce Platform';
+      value['store.seo']=legacySeo;
+
       setConfig(value);
 
       const theme=value['store.theme']||{};

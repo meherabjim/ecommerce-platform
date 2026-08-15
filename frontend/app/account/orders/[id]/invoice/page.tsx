@@ -26,7 +26,7 @@ export default function InvoicePage(){
      <article className="mx-auto overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/50 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
        <div className="bg-gradient-to-r from-[#102956] to-[#1464f4] p-7 text-white print:bg-white print:text-slate-950">
          <div className="flex flex-wrap justify-between gap-5">
-           <div><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-white/15 print:border"><ShoppingBag size={20}/></span><div><p className="text-2xl font-black">Neuro Commerce</p><p className="text-xs text-white/70 print:text-slate-500">Order invoice</p></div></div></div>
+           <div><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-white/15 print:border"><ShoppingBag size={20}/></span><div><p className="text-2xl font-black">E-Commerce Platform</p><p className="text-xs text-white/70 print:text-slate-500">Order invoice</p></div></div></div>
            <div className="text-right"><p className="text-xs font-black uppercase tracking-[.18em] text-white/65 print:text-slate-400">Invoice</p><h1 className="mt-1 text-2xl font-black">{d.invoiceNumber}</h1><p className="mt-1 text-xs text-white/70 print:text-slate-500">{new Date(d.issuedAt).toLocaleString()}</p></div>
          </div>
        </div>
@@ -55,7 +55,7 @@ export default function InvoicePage(){
              <div className="flex justify-between text-orange-700"><span>Due</span><b>{money(p.due)}</b></div>
            </div>
          </div>
-         <p className="mt-8 border-t border-dashed border-slate-200 pt-5 text-center text-[10px] text-slate-400">Thank you for shopping with Neuro Commerce. This invoice was generated from your recorded order and payment information.</p>
+         <p className="mt-8 border-t border-dashed border-slate-200 pt-5 text-center text-[10px] text-slate-400">Thank you for shopping with E-Commerce Platform. This invoice was generated from your recorded order and payment information.</p>
        </div>
      </article>
    </div>

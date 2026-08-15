@@ -44,7 +44,7 @@ export default function DeliveryDashboard(){
   return <main className="min-h-screen bg-[#f5f6f8] text-slate-950">
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-        <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#1464f4] text-white"><Truck size={18}/></span><div><p className="font-black">Neuro Delivery</p><p className="text-[10px] font-bold uppercase tracking-[.15em] text-slate-400">{user?.name}</p></div></div>
+        <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#1464f4] text-white"><Truck size={18}/></span><div><p className="font-black">Delivery Operations</p><p className="text-[10px] font-bold uppercase tracking-[.15em] text-slate-400">{user?.name}</p></div></div>
         <button onClick={()=>{clearAuth();router.replace('/login')}} className="flex items-center gap-2 rounded-xl border border-rose-200 px-3 py-2 text-xs font-black text-rose-600"><LogOut size={15}/>Sign out</button>
       </div>
     </header>

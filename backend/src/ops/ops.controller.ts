@@ -36,7 +36,7 @@ export class OpsController {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="neuro-commerce-orders-${stamp}.csv"`,
+      `attachment; filename="ecommerce-orders-${stamp}.csv"`,
     );
     res.send(csv);
   }
@@ -60,7 +60,7 @@ export class OpsController {
   @Roles(UserRole.ADMIN)
   async customersCsv(@Res() res:Response){
     res.setHeader('Content-Type','text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition','attachment; filename="neuro-commerce-customers.csv"');
+    res.setHeader('Content-Disposition','attachment; filename="ecommerce-customers.csv"');
     res.send(await this.service.customersCsv());
   }
 
@@ -69,7 +69,7 @@ export class OpsController {
   @Roles(UserRole.ADMIN)
   async inventoryCsv(@Res() res:Response){
     res.setHeader('Content-Type','text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition','attachment; filename="neuro-commerce-inventory.csv"');
+    res.setHeader('Content-Disposition','attachment; filename="ecommerce-inventory.csv"');
     res.send(await this.service.inventoryCsv());
   }
 

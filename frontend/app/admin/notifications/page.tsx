@@ -5,7 +5,7 @@ import { BellRing,Send } from 'lucide-react';
 import AdminShell from '@/components/admin-shell';
 import { api } from '@/lib/api';
 import { getStoredUser } from '@/lib/auth';
-const allowed=new Set(['SUPER_ADMIN','ADMIN','CUSTOMER_SUPPORT']);
+const allowed=new Set(['SUPER_ADMIN','ADMIN','CUSTOMER_SUPPORT','MARKETING_MANAGER']);
 export default function AdminNotifications(){
  const r=useRouter();const [items,setItems]=useState<any[]>([]);const [msg,setMsg]=useState('');const [f,setF]=useState({type:'SYSTEM',title:'',message:''});
  async function load(){setItems((await api.get('/admin/notifications')).data||[])}

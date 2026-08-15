@@ -18,7 +18,7 @@ export default function Loading(){
           animation:'neuroSpin .8s linear infinite'
         }}/>
         <p style={{marginTop:14,fontSize:13,fontWeight:800,color:'#b9c9da'}}>
-          Loading Neuro Commerce…
+          Loading E-Commerce Platform…
         </p>
         <style>{`@keyframes neuroSpin{to{transform:rotate(360deg)}}`}</style>
       </div>

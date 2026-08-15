@@ -18,7 +18,7 @@ export default function StoreFooter(){
   const identity=config['store.identity']||{};
   const footer=config['store.footer']||{};
   const contact=config['store.contact']||{};
-  const storeName=identity.storeName||'Neuro Commerce';
+  const storeName=identity.storeName||'E-Commerce Platform';
   const about=footer.about||'Modern fashion, dependable delivery and a connected shopping experience.';
   const copyright=footer.copyright||`© 2026 ${storeName}. All rights reserved.`;
   const phone=contact.phone||identity.supportPhone||'01764305948';

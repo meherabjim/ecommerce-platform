@@ -22,7 +22,7 @@ export default function CmsPublicPage(){
       !page?<p className="py-20 text-center font-black text-sky-200">Loading page...</p>:
       <>
         <div className="overflow-hidden rounded-[2rem] border border-[#456785] bg-gradient-to-r from-[#1d4ed8] via-[#0369a1] to-[#16a34a] p-7 text-white shadow-xl sm:p-9">
-          <p className="text-xs font-black uppercase tracking-[.18em] text-sky-100">Neuro Commerce · Information</p>
+          <p className="text-xs font-black uppercase tracking-[.18em] text-sky-100">E-Commerce Platform · Information</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-white sm:text-5xl">{page.title}</h1>
           <p className="mt-3 text-sm text-sky-100">Clear store information, policies and customer guidance.</p>
         </div>

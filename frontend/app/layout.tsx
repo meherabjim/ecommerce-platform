@@ -7,25 +7,25 @@ import { GlobalLanguageBridge, I18nProvider } from '@/lib/i18n';
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
-    default: 'Neuro Commerce',
-    template: '%s | Neuro Commerce',
+    default: 'E-Commerce Platform',
+    template: '%s | E-Commerce Platform',
   },
   description:
     'Modern ecommerce platform with live inventory, secure checkout, delivery tracking, wishlist, reviews and returns.',
-  applicationName: 'Neuro Commerce',
+  applicationName: 'E-Commerce Platform',
   keywords: [
     'ecommerce',
     'online shopping',
     'Bangladesh',
     'delivery',
-    'Neuro Commerce',
+    'E-Commerce Platform',
   ],
   openGraph: {
     type: 'website',
-    title: 'Neuro Commerce',
+    title: 'E-Commerce Platform',
     description:
       'Modern shopping with live inventory, secure checkout and delivery tracking.',
-    siteName: 'Neuro Commerce',
+    siteName: 'E-Commerce Platform',
   },
   robots: {
     index: true,

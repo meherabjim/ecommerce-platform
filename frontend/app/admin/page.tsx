@@ -1,641 +1,161 @@
 'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-
-import {
-  useRouter,
-} from 'next/navigation';
-
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-
+import { AlertTriangle, Boxes, ClipboardList, Gift, RotateCcw, Truck, UsersRound, Warehouse, WalletCards } from 'lucide-react';
 import AdminShell from '@/components/admin-shell';
+import { api } from '@/lib/api';
+import { getStoredUser, hasAdminCapability, isStaffRole } from '@/lib/auth';
 
-import {
-  api,
-} from '@/lib/api';
+type LoadState={
+  orders:any[];
+  users:any[];
+  inventory:any[];
+  returns:any[];
+  shipping:any[];
+};
 
-import {
-  clearAuth,
-  getStoredUser,
-} from '@/lib/auth';
+const emptyState:LoadState={orders:[],users:[],inventory:[],returns:[],shipping:[]};
 
+export default function AdminDashboard(){
+  const [me,setMe]=useState<any>(null);
+  const [data,setData]=useState<LoadState>(emptyState);
+  const [loading,setLoading]=useState(true);
+  const [warnings,setWarnings]=useState<string[]>([]);
 
-export default function AdminDashboard() {
-
-  const router =
-    useRouter();
-
-  const [orders,setOrders] =
-    useState<any[]>([]);
-
-  const [users,setUsers] =
-    useState<any[]>([]);
-
-  const [inventory,setInventory] =
-    useState<any[]>([]);
-
-  const [products,setProducts] =
-    useState<any[]>([]);
-
-  const [returns,setReturns] =
-    useState<any[]>([]);
-
-  const [shipping,setShipping] =
-    useState<any[]>([]);
-
-  const [loading,setLoading] =
-    useState(true);
-
-
-  useEffect(() => {
-
-    const current =
-      getStoredUser();
-
-    const allowedRoles = [
-      'SUPER_ADMIN',
-      'ADMIN',
-      'CATALOG_MANAGER',
-      'INVENTORY_MANAGER',
-      'ORDER_MANAGER',
-      'CUSTOMER_SUPPORT',
-      'MARKETING_MANAGER',
-      'FINANCE',
-    ];
-
-
-    if(
-      !current ||
-      !allowedRoles.includes(
-        String(current.role).toUpperCase()
-      )
-    ){
-
-      router.replace('/');
+  useEffect(()=>{
+    const current=getStoredUser();
+    setMe(current);
+    if(!current||!isStaffRole(current.role)){
+      setLoading(false);
       return;
-
     }
 
+    const role=String(current.role);
+    const requests:{key:keyof LoadState;label:string;run:()=>Promise<any>}[]=[];
 
-    Promise.all([
-      api.get('/admin/orders'),
-      api.get('/users'),
-      api.get('/inventory'),
-      api.get('/catalog/products'),
-      api.get('/admin/returns'),
-      api.get('/admin/shipping-zones'),
-    ])
-      .then(
-        ([
-          orderResponse,
-          userResponse,
-          inventoryResponse,
-          productResponse,
-          returnResponse,
-          shippingResponse,
-        ]) => {
+    if(hasAdminCapability(role,'ORDERS')){
+      requests.push({key:'orders',label:'orders',run:()=>api.get('/admin/orders')});
+    }
+    if(hasAdminCapability(role,'VIEW_USERS')){
+      requests.push({key:'users',label:'users',run:()=>api.get('/users')});
+    }
+    if(hasAdminCapability(role,'INVENTORY')){
+      requests.push({key:'inventory',label:'inventory',run:()=>api.get('/inventory')});
+    }
+    if(hasAdminCapability(role,'RETURNS')){
+      requests.push({key:'returns',label:'returns',run:()=>api.get('/admin/returns')});
+    }
+    if(hasAdminCapability(role,'DELIVERY')){
+      requests.push({key:'shipping',label:'shipping zones',run:()=>api.get('/admin/shipping-zones')});
+    }
 
-          setOrders(
-            orderResponse.data || [],
-          );
-
-          setUsers(
-            userResponse.data || [],
-          );
-
-          setInventory(
-            inventoryResponse.data || [],
-          );
-
-          setProducts(
-            productResponse.data || [],
-          );
-
-          setReturns(
-            returnResponse.data || [],
-          );
-
-          setShipping(
-            shippingResponse.data || [],
-          );
-        },
-      )
-      .catch(() => {
-
-        // Keep the valid session. A failed dashboard request must not log the user out.
-        setLoading(false);
+    Promise.allSettled(requests.map(x=>x.run()))
+      .then(results=>{
+        const next={...emptyState};
+        const failed:string[]=[];
+        results.forEach((result,index)=>{
+          const request=requests[index];
+          if(result.status==='fulfilled'){
+            next[request.key]=Array.isArray(result.value.data)?result.value.data:[];
+          }else{
+            failed.push(request.label);
+          }
+        });
+        setData(next);
+        setWarnings(failed);
       })
-      .finally(
-        () =>
-          setLoading(false),
-      );
+      .finally(()=>setLoading(false));
+  },[]);
 
-  },[router]);
+  const role=String(me?.role||'');
+  const metrics=useMemo(()=>{
+    const paidRevenue=data.orders
+      .filter(x=>x.paymentStatus==='PAID')
+      .reduce((s,x)=>s+Number(x.total||0),0);
+    const activeDelivery=data.orders.filter(x=>['READY_FOR_PICKUP','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY'].includes(x.status)).length;
+    const customers=data.users.filter(x=>x.role==='CUSTOMER').length;
+    const riders=data.users.filter(x=>x.role==='DELIVERY_AGENT').length;
+    const lowStock=data.inventory.filter(x=>x.lowStock).length;
+    const available=data.inventory.reduce((s,x)=>s+Number(x.available||0),0);
+    const pendingReturns=data.returns.filter(x=>x.status==='REQUESTED').length;
+    const averageOrder=data.orders.length
+      ? data.orders.reduce((s,x)=>s+Number(x.total||0),0)/data.orders.length
+      : 0;
+    return {paidRevenue,activeDelivery,customers,riders,lowStock,available,pendingReturns,averageOrder};
+  },[data]);
 
+  const cards=[
+    hasAdminCapability(role,'ORDERS')&&{label:'Orders',value:data.orders.length,href:'/admin/orders',icon:ClipboardList,tone:'blue'},
+    hasAdminCapability(role,'ORDERS')&&{label:'Paid revenue',value:`BDT ${metrics.paidRevenue.toFixed(2)}`,href:'/admin/orders',icon:WalletCards,tone:'violet'},
+    hasAdminCapability(role,'CUSTOMERS')&&{label:'Customers',value:metrics.customers,href:'/admin/customers',icon:UsersRound,tone:'cyan'},
+    hasAdminCapability(role,'INVENTORY')&&{label:'Low-stock variants',value:metrics.lowStock,href:'/admin/inventory',icon:Warehouse,tone:'amber'},
+    hasAdminCapability(role,'DELIVERY')&&{label:'Active deliveries',value:metrics.activeDelivery,href:'/admin/delivery',icon:Truck,tone:'emerald'},
+    hasAdminCapability(role,'RETURNS')&&{label:'Pending returns',value:metrics.pendingReturns,href:'/admin/returns',icon:RotateCcw,tone:'rose'},
+    hasAdminCapability(role,'CATALOG')&&{label:'Catalog control',value:'Manage',href:'/admin/catalog',icon:Boxes,tone:'indigo'},
+    hasAdminCapability(role,'PROMOTIONS')&&{label:'Promotions',value:'Manage',href:'/admin/promotions',icon:Gift,tone:'orange'},
+  ].filter(Boolean) as any[];
 
-  const metrics =
-    useMemo(() => {
-
-      const customers =
-        users.filter(
-          user =>
-            user.role === 'CUSTOMER',
-        ).length;
-
-      const riders =
-        users.filter(
-          user =>
-            user.role ===
-            'DELIVERY_AGENT',
-        ).length;
-
-      const delivered =
-        orders.filter(
-          order =>
-            order.status ===
-            'DELIVERED',
-        );
-
-      const cancelled =
-        orders.filter(
-          order =>
-            order.status ===
-            'CANCELLED',
-        ).length;
-
-      const activeDelivery =
-        orders.filter(
-          order =>
-            [
-              'READY_FOR_PICKUP',
-              'SHIPPED',
-              'IN_TRANSIT',
-              'OUT_FOR_DELIVERY',
-            ].includes(
-              order.status,
-            ),
-        ).length;
-
-      const grossSales =
-        delivered.reduce(
-          (sum,order) =>
-            sum +
-            Number(
-              order.total || 0,
-            ),
-          0,
-        );
-
-      const paidRevenue =
-        orders
-          .filter(
-            order =>
-              order.paymentStatus ===
-              'PAID',
-          )
-          .reduce(
-            (sum,order) =>
-              sum +
-              Number(
-                order.total || 0,
-              ),
-            0,
-          );
-
-      const lowStock =
-        inventory.filter(
-          item =>
-            item.lowStock,
-        ).length;
-
-      const available =
-        inventory.reduce(
-          (sum,item) =>
-            sum +
-            Number(
-              item.available || 0,
-            ),
-          0,
-        );
-
-      const pendingReturns =
-        returns.filter(
-          item =>
-            item.status ===
-            'REQUESTED',
-        ).length;
-
-      const averageOrder =
-        orders.length
-          ? orders.reduce(
-              (sum,order) =>
-                sum +
-                Number(
-                  order.total || 0,
-                ),
-              0,
-            ) /
-            orders.length
-          : 0;
-
-      return {
-        customers,
-        riders,
-        delivered:
-          delivered.length,
-        cancelled,
-        activeDelivery,
-        grossSales,
-        paidRevenue,
-        lowStock,
-        available,
-        pendingReturns,
-        averageOrder,
-      };
-
-    },[
-      users,
-      orders,
-      inventory,
-      returns,
-    ]);
-
-
-  const statuses = [
-    'CONFIRMED',
-    'PROCESSING',
-    'PACKED',
-    'READY_FOR_PICKUP',
-    'SHIPPED',
-    'IN_TRANSIT',
-    'OUT_FOR_DELIVERY',
-    'DELIVERED',
-    'DELIVERY_FAILED',
-    'CANCELLED',
-  ];
-
+  const quick=[
+    hasAdminCapability(role,'CATALOG')&&['Manage catalog','/admin/catalog'],
+    hasAdminCapability(role,'ORDERS')&&['Process orders','/admin/orders'],
+    hasAdminCapability(role,'INVENTORY')&&['Check inventory','/admin/inventory'],
+    hasAdminCapability(role,'PROMOTIONS')&&['Manage promotions','/admin/promotions'],
+    hasAdminCapability(role,'CUSTOMERS')&&['Customer support','/admin/customers'],
+    hasAdminCapability(role,'FINANCE')&&['Finance','/admin/finance'],
+    hasAdminCapability(role,'CMS')&&['CMS & theme','/admin/cms'],
+  ].filter(Boolean) as string[][];
 
   if(loading){
-
-    return (
-      <main className="grid min-h-screen place-items-center">
-        Loading dashboard...
-      </main>
-    );
+    return <AdminShell><div className="grid min-h-[55vh] place-items-center"><div className="text-center"><div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"/><p className="mt-4 text-sm font-black text-slate-500">Loading your dashboard…</p></div></div></AdminShell>;
   }
 
-
-  return (
-    <AdminShell>
-
-      <div className="flex flex-wrap items-end justify-between gap-4">
-
-        <div>
-
-          <p className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-[.18em] text-blue-700">
-            Admin overview
-          </p>
-
-          <h1 className="mt-3 bg-gradient-to-r from-slate-950 via-blue-800 to-violet-700 bg-clip-text text-4xl font-black tracking-tight text-transparent">
-            Commerce dashboard
-          </h1>
-
-          <p className="mt-2 text-slate-500">
-            Sales, fulfillment, customers, inventory and delivery operations.
-          </p>
-
-        </div>
-
-
-        <div className="flex flex-wrap gap-2">
-
-          <Link
-            href="/admin/catalog"
-            className="rounded-xl border border-blue-200 bg-white/80 px-4 py-3 text-sm font-black text-blue-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            Add product
-          </Link>
-
-          <Link
-            href="/admin/orders"
-            className="rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5"
-          >
-            Process orders
-          </Link>
-
-        </div>
-
+  return <AdminShell>
+    <div className="flex flex-wrap items-end justify-between gap-5">
+      <div>
+        <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-[10px] font-black uppercase tracking-[.18em] text-blue-700">{role.replaceAll('_',' ')||'ADMIN'} workspace</span>
+        <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950">Commerce dashboard</h1>
+        <p className="mt-2 text-sm text-slate-500">Only data and controls permitted for your current role are loaded here.</p>
       </div>
+      <div className="flex flex-wrap gap-2">
+        {quick.slice(0,3).map(([label,href],i)=><Link key={href} href={href} className={i===0?'rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-blue-700':'rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 hover:border-blue-300 hover:text-blue-700'}>{label}</Link>)}
+      </div>
+    </div>
 
+    {warnings.length>0&&<div className="mt-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900"><AlertTriangle size={18} className="mt-0.5 shrink-0"/><div><p className="text-sm font-black">Some dashboard data could not be loaded</p><p className="mt-1 text-xs">Unavailable: {warnings.join(', ')}. Your session has been kept active.</p></div></div>}
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-        {[
-          [
-            'Paid revenue',
-            `BDT ${metrics.paidRevenue.toFixed(2)}`,
-            '/admin/orders',
-          ],
-          [
-            'Orders',
-            orders.length,
-            '/admin/orders',
-          ],
-          [
-            'Customers',
-            metrics.customers,
-            '/admin/users',
-          ],
-          [
-            'Avg. order value',
-            `BDT ${metrics.averageOrder.toFixed(2)}`,
-            '/admin/orders',
-          ],
-        ].map(
-          ([label,value,href]) => (
-
-            <Link
-              key={String(label)}
-              href={String(href)}
-              className="rounded-3xl border border-white/70 bg-white/85 p-6 shadow-[0_12px_35px_rgba(15,23,42,.06)] backdrop-blur transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl"
-            >
-
-              <p className="text-sm font-semibold text-slate-500">
-                {label}
-              </p>
-
-              <p className="mt-3 text-3xl font-black">
-                {value}
-              </p>
-
-            </Link>
-
-          ),
-        )}
-
-      </section>
-
-
-      <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-        <Link
-          href="/admin/delivery"
-          className="rounded-3xl bg-gradient-to-br from-blue-600 via-blue-600 to-violet-600 p-6 text-white shadow-xl shadow-blue-200/70"
-        >
-
-          <p className="text-sm text-white/50">
-            Active deliveries
-          </p>
-
-          <p className="mt-3 text-4xl font-black tracking-tight">
-            {metrics.activeDelivery}
-          </p>
-
-          <p className="mt-2 text-xs text-white/50">
-            {metrics.riders} delivery agents
-          </p>
-
+    <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card:any)=>{
+        const Icon=card.icon;
+        return <Link key={card.label} href={card.href} className="group rounded-[1.5rem] border border-white/80 bg-white/90 p-5 shadow-[0_12px_35px_rgba(15,23,42,.06)] transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
+          <div className="flex items-center justify-between"><span className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-slate-700 group-hover:bg-blue-50 group-hover:text-blue-700"><Icon size={18}/></span><span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Live</span></div>
+          <p className="mt-5 text-sm font-semibold text-slate-500">{card.label}</p>
+          <p className="mt-2 text-3xl font-black tracking-tight">{card.value}</p>
         </Link>
+      })}
+    </section>
 
-
-        <Link
-          href="/admin/inventory"
-          className="rounded-[1.5rem] border border-white/70 bg-white/85 p-6 shadow-[0_12px_35px_rgba(15,23,42,.06)] backdrop-blur"
-        >
-
-          <p className="text-sm text-slate-500">
-            Low-stock variants
-          </p>
-
-          <p className="mt-3 text-4xl font-black tracking-tight">
-            {metrics.lowStock}
-          </p>
-
-          <p className="mt-2 text-xs text-slate-500">
-            {metrics.available} units available
-          </p>
-
-        </Link>
-
-
-        <Link
-          href="/admin/returns"
-          className="rounded-[1.5rem] border border-white/70 bg-white/85 p-6 shadow-[0_12px_35px_rgba(15,23,42,.06)] backdrop-blur"
-        >
-
-          <p className="text-sm text-slate-500">
-            Pending returns
-          </p>
-
-          <p className="mt-3 text-4xl font-black tracking-tight">
-            {metrics.pendingReturns}
-          </p>
-
-          <p className="mt-2 text-xs text-slate-500">
-            {returns.length} total requests
-          </p>
-
-        </Link>
-
-
-        <Link
-          href="/admin/shipping"
-          className="rounded-[1.5rem] border border-white/70 bg-white/85 p-6 shadow-[0_12px_35px_rgba(15,23,42,.06)] backdrop-blur"
-        >
-
-          <p className="text-sm text-slate-500">
-            Shipping rules
-          </p>
-
-          <p className="mt-3 text-4xl font-black tracking-tight">
-            {shipping.length}
-          </p>
-
-          <p className="mt-2 text-xs text-slate-500">
-            Configured delivery zones
-          </p>
-
-        </Link>
-
-      </section>
-
-
-      <section className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.4fr]">
-
-        <div className="rounded-[1.5rem] border border-white/70 bg-white/85 p-6 shadow-[0_12px_35px_rgba(15,23,42,.06)] backdrop-blur">
-
-          <h2 className="text-xl font-black">
-            Order pipeline
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Fulfillment distribution.
-          </p>
-
-
-          <div className="mt-6 space-y-3">
-
-            {statuses.map(
-              status => {
-
-                const count =
-                  orders.filter(
-                    order =>
-                      order.status ===
-                      status,
-                  ).length;
-
-                const width =
-                  orders.length
-                    ? Math.max(
-                        count
-                          ? 5
-                          : 0,
-                        Math.round(
-                          (
-                            count /
-                            orders.length
-                          ) *
-                          100,
-                        ),
-                      )
-                    : 0;
-
-                return (
-                  <div key={status}>
-
-                    <div className="flex justify-between gap-3 text-xs">
-
-                      <span className="font-bold">
-                        {status.replaceAll('_',' ')}
-                      </span>
-
-                      <span>
-                        {count}
-                      </span>
-
-                    </div>
-
-                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
-
-                      <div
-                        className="h-full rounded-full bg-[#1464f4]"
-                        style={{
-                          width:
-                            `${width}%`,
-                        }}
-                      />
-
-                    </div>
-
-                  </div>
-                );
-              },
-            )}
-
+    {hasAdminCapability(role,'ORDERS')&&
+      <section className="mt-6 grid gap-5 xl:grid-cols-[.85fr_1.35fr]">
+        <div className="rounded-[1.5rem] border border-white/80 bg-white/90 p-5 shadow-sm">
+          <h2 className="text-lg font-black">Operational summary</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            <div className="rounded-2xl bg-blue-50 p-4"><p className="text-xs font-bold text-blue-600">Average order value</p><p className="mt-2 text-2xl font-black">BDT {metrics.averageOrder.toFixed(2)}</p></div>
+            {hasAdminCapability(role,'DELIVERY')&&<div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-bold text-emerald-700">Delivery agents</p><p className="mt-2 text-2xl font-black">{metrics.riders}</p></div>}
+            {hasAdminCapability(role,'INVENTORY')&&<div className="rounded-2xl bg-amber-50 p-4"><p className="text-xs font-bold text-amber-700">Available units</p><p className="mt-2 text-2xl font-black">{metrics.available}</p></div>}
           </div>
-
         </div>
 
-
-        <div className="rounded-[1.5rem] border border-white/70 bg-white/85 p-6 shadow-[0_12px_35px_rgba(15,23,42,.06)] backdrop-blur">
-
-          <div className="flex items-end justify-between">
-
-            <div>
-
-              <h2 className="text-xl font-black">
-                Recent orders
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Latest customer transactions.
-              </p>
-
-            </div>
-
-            <Link
-              href="/admin/orders"
-              className="text-sm font-bold underline"
-            >
-              View all
-            </Link>
-
+        <div className="rounded-[1.5rem] border border-white/80 bg-white/90 p-5 shadow-sm">
+          <div className="flex items-end justify-between gap-3"><div><h2 className="text-lg font-black">Recent orders</h2><p className="mt-1 text-xs text-slate-500">Latest transactions available to your role.</p></div><Link href="/admin/orders" className="text-xs font-black text-blue-700">View all →</Link></div>
+          <div className="mt-4 space-y-2">
+            {data.orders.slice(0,6).map(order=><Link key={order.id} href={`/admin/orders/${order.id}`} className="grid gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 hover:border-blue-200 hover:bg-blue-50/40 md:grid-cols-[1fr_.7fr_.6fr]"><div><p className="text-sm font-black">{order.orderNumber}</p><p className="text-[11px] text-slate-500">{order.customerName||'Customer'}</p></div><div><p className="text-[10px] uppercase text-slate-400">Status</p><p className="text-xs font-bold">{String(order.status||'').replaceAll('_',' ')}</p></div><div className="md:text-right"><p className="text-[10px] uppercase text-slate-400">Total</p><p className="text-sm font-black">BDT {order.total}</p></div></Link>)}
+            {!data.orders.length&&<div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-semibold text-slate-400">No order data available for this role.</div>}
           </div>
-
-
-          <div className="mt-5 space-y-3">
-
-            {orders
-              .slice(0,6)
-              .map(
-                order => (
-
-                  <Link
-                    key={order.id}
-                    href={`/admin/orders/${order.id}`}
-                    className="grid gap-3 rounded-2xl border border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50/50 p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md md:grid-cols-[1.2fr_0.8fr_0.7fr]"
-                  >
-
-                    <div>
-
-                      <p className="font-black">
-                        {order.orderNumber}
-                      </p>
-
-                      <p className="text-xs text-slate-500">
-                        {order.customerName}
-                        {' · '}
-                        {order.area ||
-                          order.district ||
-                          order.city}
-                      </p>
-
-                    </div>
-
-
-                    <div>
-
-                      <p className="text-[10px] font-bold uppercase text-slate-400">
-                        Status
-                      </p>
-
-                      <p className="text-sm font-bold">
-                        {order.status.replaceAll('_',' ')}
-                      </p>
-
-                    </div>
-
-
-                    <div className="md:text-right">
-
-                      <p className="text-[10px] font-bold uppercase text-slate-400">
-                        Total
-                      </p>
-
-                      <p className="font-black">
-                        BDT {order.total}
-                      </p>
-
-                    </div>
-
-                  </Link>
-
-                ),
-              )}
-
-          </div>
-
         </div>
-
       </section>
+    }
 
-    </AdminShell>
-  );
+    {!cards.length&&<div className="mt-7 rounded-3xl border border-slate-200 bg-white p-8"><h2 className="text-xl font-black">No operational module assigned</h2><p className="mt-2 text-sm text-slate-500">Ask a Super Admin to review this staff account role.</p></div>}
+  </AdminShell>
 }
-
-

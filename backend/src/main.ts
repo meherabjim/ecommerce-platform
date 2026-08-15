@@ -37,7 +37,7 @@ async function bootstrap() {
   );
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Neuro Commerce API')
+    .setTitle('E-Commerce Platform API')
     .setDescription(
       'REST API for storefront, customer, admin, inventory and delivery operations.',
     )
@@ -66,7 +66,7 @@ async function bootstrap() {
   );
 
   console.log(
-    `Neuro Commerce API running on http://localhost:${port}/api`,
+    `E-Commerce Platform API running on http://localhost:${port}/api`,
   );
 
   console.log(

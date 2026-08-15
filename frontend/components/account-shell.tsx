@@ -119,7 +119,7 @@ export default function AccountShell({children}:{children:React.ReactNode}){
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-black">{user?.name||(language==='bn'?'আমার অ্যাকাউন্ট':'My account')}</p>
-                  <p className="mt-1 truncate text-[11px] text-white/70">{user?.email||'Neuro Commerce customer'}</p>
+                  <p className="mt-1 truncate text-[11px] text-white/70">{user?.email||'E-Commerce Platform customer'}</p>
                 </div>
               </div>
 

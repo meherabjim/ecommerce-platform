@@ -16,7 +16,7 @@ export class UsersController {
 
   @Get()
   @UseGuards(JwtAuthGuard,RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN,UserRole.ADMIN,UserRole.CUSTOMER_SUPPORT)
   findAll(){return this.s.findAll()}
 
   @Post('staff')
@@ -35,7 +35,7 @@ export class UsersController {
 
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard,RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN,UserRole.ADMIN)
   updateStatus(@CurrentUser() actor:any,@Param('id') id:string,@Body() dto:UpdateUserStatusDto){
     return this.s.updateStatus(id,dto.status,actor.id)
   }

@@ -49,7 +49,7 @@ export default function NewArrivalsPage(){
               {language==='bn'?'নতুন যা এসেছে, সবার আগে দেখুন':'Fresh arrivals, before everyone else'}
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-7 text-sky-100">
-              {language==='bn'?'সর্বশেষ যোগ হওয়া ফ্যাশন পণ্যগুলো নতুন থেকে পুরোনো ক্রমে সাজানো।':'A dedicated edit of the newest products added to Neuro Commerce, ordered newest first.'}
+              {language==='bn'?'সর্বশেষ যোগ হওয়া ফ্যাশন পণ্যগুলো নতুন থেকে পুরোনো ক্রমে সাজানো।':'A dedicated edit of the newest products added to E-Commerce Platform, ordered newest first.'}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a href="#new-arrivals-grid" className="inline-flex items-center gap-2 rounded-full bg-[#f97316] px-5 py-3 text-sm font-black text-white hover:bg-[#ea580c]">

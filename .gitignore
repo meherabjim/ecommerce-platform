@@ -93,3 +93,22 @@ backend/.env
 # Logs
 *.log
 npm-debug.log*
+
+
+# Final repository hygiene
+*.backup
+*.backup-*
+*.before-*
+*.tmp
+*.temp
+*.bak
+NEURO-*.zip
+*-BACKUP-*.zip
+BACKEND-8-ERRORS.txt
+FINAL-SRS-AUDIT-*.txt
+ADDRESS-DELIVERY-FULL-CODE.txt
+PROJECT-FINAL-AUDIT.txt
+coverage/
+.env
+.env.*
+!.env.example

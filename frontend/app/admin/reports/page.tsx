@@ -28,6 +28,7 @@ export default function ReportsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [role,setRole]=useState('');
 
   async function load() {
     setLoading(true);
@@ -44,10 +45,11 @@ export default function ReportsPage() {
 
   useEffect(() => {
     const user = getStoredUser();
-    if (!user || !['SUPER_ADMIN','ADMIN','INVENTORY_MANAGER','ORDER_MANAGER','MARKETING_MANAGER','FINANCE'].includes(user.role)) {
-      router.replace('/login');
+    if (!user || !['SUPER_ADMIN','ADMIN','FINANCE'].includes(user.role)) {
+      router.replace('/admin');
       return;
     }
+    setRole(user.role);
     load();
   }, [router]);
 
@@ -67,7 +69,7 @@ export default function ReportsPage() {
     );
     const link = document.createElement('a');
     link.href = url;
-    link.download = `neuro-commerce-orders-${new Date()
+    link.download = `ecommerce-orders-${new Date()
       .toISOString()
       .slice(0, 10)}.csv`;
     document.body.appendChild(link);
@@ -123,8 +125,10 @@ export default function ReportsPage() {
             <Download size={16} />
             Export orders CSV
           </button>
-          <button onClick={()=>exportCsv('/admin/reports/customers.csv','neuro-commerce-customers.csv')} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black"><Download size={16}/>Customers CSV</button>
-          <button onClick={()=>exportCsv('/admin/reports/inventory.csv','neuro-commerce-inventory.csv')} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black"><Download size={16}/>Inventory CSV</button>
+          {['SUPER_ADMIN','ADMIN'].includes(role)&&<>
+            <button onClick={()=>exportCsv('/admin/reports/customers.csv','ecommerce-customers.csv')} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black"><Download size={16}/>Customers CSV</button>
+            <button onClick={()=>exportCsv('/admin/reports/inventory.csv','ecommerce-inventory.csv')} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black"><Download size={16}/>Inventory CSV</button>
+          </>}
         </div>
       </div>
 

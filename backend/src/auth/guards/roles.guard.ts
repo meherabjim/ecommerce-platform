@@ -13,40 +13,48 @@ export class RolesGuard implements CanActivate {
 
   private delegatedAdminAccess(role:UserRole, method:string, url:string) {
     const path=String(url||'').toLowerCase();
+    const verb=String(method||'GET').toUpperCase();
 
     if(role===UserRole.CATALOG_MANAGER){
       return path.includes('catalog') || path.includes('barcode');
     }
 
     if(role===UserRole.INVENTORY_MANAGER){
+      // Inventory staff must not inherit customer/order/financial reports merely
+      // because their URL contains "reports".
       return path.includes('inventory') || path.includes('warehouse') ||
-        path.includes('barcode') || path.includes('reports');
+        path.includes('barcode');
     }
 
     if(role===UserRole.ORDER_MANAGER){
       return path.includes('admin/orders') || path.includes('courier') ||
         path.includes('shipping-zone') || path.includes('admin/delivery') ||
-        path.includes('return') || path.includes('reports');
+        path.includes('return');
     }
 
     if(role===UserRole.CUSTOMER_SUPPORT){
       if(path.includes('admin/customers') || path.includes('return') ||
-         path.includes('review') || path.includes('notification')) return true;
-      if(path.includes('admin/orders')) return method==='GET';
-      if(path==='/users' || path.endsWith('/users')) return method==='GET';
+         path.includes('review')) return true;
+      if(path.includes('notification')) return verb==='GET';
+      if(path.includes('admin/orders')) return verb==='GET';
+      if(path==='/users' || path.endsWith('/users')) return verb==='GET';
       return false;
     }
 
     if(role===UserRole.MARKETING_MANAGER){
-      return path.includes('promotion') || path.includes('cms') ||
-        path.includes('review') || path.includes('reports');
+      if(path.includes('promotion') || path.includes('cms') ||
+         path.includes('review')) return true;
+      // Marketing may broadcast notifications, but access to business-wide
+      // reports is intentionally not inherited.
+      if(path.includes('notification')) return ['GET','POST'].includes(verb);
+      return false;
     }
 
     if(role===UserRole.FINANCE){
       if(path.includes('payment') || path.includes('finance') ||
          path.includes('reports')) return true;
       if(path.includes('admin/orders')) {
-        return method==='GET' || path.includes('payment-status');
+        return verb==='GET' || path.includes('payment-status');
       }
       return false;
     }
@@ -68,15 +76,11 @@ export class RolesGuard implements CanActivate {
     if(!role) return false;
     if(requiredRoles.includes(role)) return true;
 
-    // Super Admin can perform every staff/admin action.
     if(role===UserRole.SUPER_ADMIN &&
        requiredRoles.some(x=>x!==UserRole.CUSTOMER&&x!==UserRole.DELIVERY_AGENT)){
       return true;
     }
 
-    // Existing controllers commonly declare ADMIN. Specialized staff are
-    // restricted by module/path here until every controller adopts
-    // permission decorators.
     if(requiredRoles.includes(UserRole.ADMIN)){
       if(role===UserRole.ADMIN) return true;
       return this.delegatedAdminAccess(

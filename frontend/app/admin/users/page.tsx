@@ -21,7 +21,7 @@ export default function AdminUsersPage(){
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState('');
   const [form,setForm]=useState({
-    name:'',email:'',phone:'',password:'Staff12345',role:'ORDER_MANAGER',
+    name:'',email:'',phone:'',password:'',role:'ORDER_MANAGER',
   });
 
   async function load(){
@@ -44,7 +44,7 @@ export default function AdminUsersPage(){
     e.preventDefault();setBusy('create');setMessage('');
     try{
       await api.post('/users/staff',form);
-      setForm({name:'',email:'',phone:'',password:'Staff12345',role:'ORDER_MANAGER'});
+      setForm({name:'',email:'',phone:'',password:'',role:'ORDER_MANAGER'});
       setMessage('Staff account created.');await load();
     }catch(e:any){setMessage(e?.response?.data?.message||'Could not create staff.')}
     finally{setBusy('')}
@@ -66,7 +66,7 @@ export default function AdminUsersPage(){
 
   return <AdminShell>
     <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-      <div><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Access management</p><h1 className="mt-2 text-4xl font-black">Staff & users</h1><p className="mt-2 text-sm text-slate-500">Public signup creates customers only. Super Admin creates operational staff here.</p></div>
+      <div><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Access management</p><h1 className="mt-2 text-4xl font-black">Staff & users</h1><p className="mt-2 text-sm text-slate-500">Public signup creates customers only. Super Admin creates operational staff here.</p><div className="mt-3 flex flex-wrap gap-2"><span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">{users.length} total</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-700">{users.filter(x=>x.status==='ACTIVE').length} active</span><span className="rounded-full bg-violet-50 px-3 py-1 text-[10px] font-black text-violet-700">{users.filter(x=>x.role!=='CUSTOMER'&&x.role!=='DELIVERY_AGENT').length} staff</span></div></div>
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search users..." className="h-12 rounded-xl border bg-white px-4"/>
     </div>
 
@@ -79,7 +79,7 @@ export default function AdminUsersPage(){
           <input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Full name" className="rounded-xl border border-white/10 bg-white/10 p-3"/>
           <input required type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="Email" className="rounded-xl border border-white/10 bg-white/10 p-3"/>
           <input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="Phone" className="rounded-xl border border-white/10 bg-white/10 p-3"/>
-          <input required type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Temporary password" className="rounded-xl border border-white/10 bg-white/10 p-3"/>
+          <input required minLength={12} autoComplete="new-password" type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Temporary password (12+ chars)" className="rounded-xl border border-white/10 bg-white/10 p-3"/>
           <select value={form.role} onChange={e=>setForm({...form,role:e.target.value})} className="rounded-xl border border-white/10 bg-white/10 p-3">
             {roles.map(x=><option className="text-black" key={x} value={x}>{pretty(x)}</option>)}
           </select>

@@ -25,7 +25,7 @@ export class OpsService {
   health() {
     return {
       status: 'ok',
-      service: 'neuro-commerce-api',
+      service: 'ecommerce-platform-api',
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.round(process.uptime()),
       environment: process.env.NODE_ENV || 'development',

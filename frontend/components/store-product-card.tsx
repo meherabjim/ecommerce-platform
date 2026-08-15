@@ -18,7 +18,7 @@ export default function StoreProductCard({product,language='en',onQuickView}:{pr
   const regular=v?Number(v.price):0;
   const discount=regular>price?Math.round((1-price/regular)*100):0;
   const totalStock=(product.variants||[]).reduce((s:number,x:any)=>s+Number(x.stock||0),0);
-  const brand=product.brand?.name||'Neuro';
+  const brand=product.brand?.name||'Fashion';
   const sizes=Array.from(new Set((product.variants||[]).map((x:any)=>x.attributes?.Size||x.attributes?.size).filter(Boolean))).slice(0,5);
 
   async function quickAdd(){

@@ -112,7 +112,7 @@ password:c.get<string>(
 
 database:c.get<string>(
  'DB_DATABASE',
- 'neuro_commerce'
+ 'ecommerce_platform'
 ),
 
 

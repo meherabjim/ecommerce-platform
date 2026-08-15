@@ -34,14 +34,26 @@ export class UsersService implements OnModuleInit {
   async onModuleInit(){ await this.ensureAdminUser(); }
 
   async ensureAdminUser(){
-    const email=this.configService.get<string>('ADMIN_EMAIL','admin@neurocommerce.local').trim().toLowerCase();
+    const email=(this.configService.get<string>('ADMIN_EMAIL')||'').trim().toLowerCase();
+    const password=this.configService.get<string>('ADMIN_PASSWORD')||'';
+
+    // Never create a privileged account from hardcoded fallback credentials.
+    // Existing databases continue to work normally; fresh environments can
+    // bootstrap their first Super Admin explicitly through environment values.
+    if(!email&&!password) return;
+    if(!email||!password){
+      throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD must be configured together.');
+    }
+    if(password.length<12){
+      throw new Error('ADMIN_PASSWORD must be at least 12 characters long.');
+    }
+
     const existing=await this.userModel.findOne({where:{email}});
     if(existing) return;
-    const passwordHash=await bcrypt.hash(
-      this.configService.get<string>('ADMIN_PASSWORD','Admin12345!'),12
-    );
+
+    const passwordHash=await bcrypt.hash(password,12);
     await this.userModel.create({
-      name:this.configService.get<string>('ADMIN_NAME','Super Admin'),
+      name:(this.configService.get<string>('ADMIN_NAME')||'Super Admin').trim(),
       email,phone:null,passwordHash,
       role:UserRole.SUPER_ADMIN,
       status:UserStatus.ACTIVE,
