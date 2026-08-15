@@ -1,4 +1,4 @@
-﻿# Neuro Commerce
+﻿# E-Commerce Platform
 
 Full-stack e-commerce platform.
 
@@ -69,3 +69,4 @@ npm run build
 
 Frontend:
 npm run build
+
