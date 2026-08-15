@@ -45,3 +45,51 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .vscode/
+
+# --------------------------------------------------
+# Local backups / temporary files
+# --------------------------------------------------
+*.backup
+*.backup-*
+*.before-*
+*.tmp
+*.temp
+
+# Project snapshots / generated archives
+NEURO-*.zip
+*-BACKUP-*.zip
+*.bak
+
+# Internal debugging / temporary audit output
+BACKEND-8-ERRORS.txt
+FINAL-SRS-AUDIT-*.txt
+ADDRESS-DELIVERY-FULL-CODE.txt
+
+# Local editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Builds
+.next/
+frontend/.next/
+dist/
+backend/dist/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.local
+backend/.env
+
+# Logs
+*.log
+npm-debug.log*
