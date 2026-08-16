@@ -112,3 +112,5 @@ coverage/
 .env
 .env.*
 !.env.example
+
+neuro_backup.sql

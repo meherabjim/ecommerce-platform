@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -129,17 +129,41 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     );
     if(match){
       setSearch('');
-      router.push(match.href);
+      router.push(match.href, { scroll: false });
     }
   }
 
   const denied = mounted && user && !canAccessAdminPath(user.role, pathname);
   const label = (item: NavItem) => (language === 'bn' ? item.labelBn : item.label);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const navs = document.querySelectorAll<HTMLElement>('.admin-sidebar-nav');
+
+      navs.forEach((nav) => {
+        const activeItem = nav.querySelector<HTMLElement>('[data-admin-active="true"]');
+        if (!activeItem) return;
+
+        const itemTop = activeItem.offsetTop;
+        const itemBottom = itemTop + activeItem.offsetHeight;
+        const visibleTop = nav.scrollTop;
+        const visibleBottom = visibleTop + nav.clientHeight;
+
+        if (itemTop < visibleTop) {
+          nav.scrollTop = Math.max(0, itemTop - 8);
+        } else if (itemBottom > visibleBottom) {
+          nav.scrollTop = itemBottom - nav.clientHeight + 8;
+        }
+      });
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
+
   const menu = (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 border-b border-white/10 pb-5">
-        <Link href="/admin" onClick={() => setOpen(false)} className="flex items-center gap-3">
+        <Link href="/admin" scroll={false} onClick={() => setOpen(false)} className="flex items-center gap-3">
           {storeLogo ? (
             <img src={storeLogo} alt="" className="h-11 w-11 rounded-2xl object-cover shadow-sm" />
           ) : (
@@ -170,7 +194,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </div>
       </div>
 
-      <nav className="mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+      <nav className="admin-sidebar-nav mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
         {visible.map((item) => {
           const Icon = item.icon;
           const active =
@@ -192,6 +216,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <Link
               key={item.href}
               href={item.href}
+              scroll={false}
+              data-admin-active={active ? 'true' : 'false'}
               onClick={() => setOpen(false)}
               className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black transition ${
                 active
