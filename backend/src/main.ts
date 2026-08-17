@@ -24,7 +24,14 @@ async function bootstrap() {
     .filter(Boolean);
 
   app.enableCors({
-    origin: origins,
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://ecommerce-platform-eta-rouge.vercel.app',
+      'https://ecommerce-platform-frontend-fosa.onrender.com',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
 
