@@ -19,7 +19,7 @@ export default function AdminSecurityPage(){
 
   return <AdminShell>
     <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-      <div><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Security operations</p><h1 className="mt-2 text-4xl font-black tracking-tight">Audit trail</h1><p className="mt-2 text-sm text-slate-500">Authentication and sensitive account activity.</p></div>
+      <div><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Security operations</p><h1 className="mt-2 text-3xl font-black tracking-tight">Audit trail</h1><p className="mt-2 text-sm text-slate-500">Authentication and sensitive account activity.</p></div>
       <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search audit events..." className="py-3 outline-none"/></label>
     </div>
     <section className="mt-6 grid gap-3 sm:grid-cols-3">

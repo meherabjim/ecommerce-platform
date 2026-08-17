@@ -58,7 +58,7 @@ export default function AdminShippingPage(){
   }
 
   return <AdminShell>
-    <div><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Hybrid fulfillment</p><h1 className="mt-2 text-4xl font-black">Shipping & delivery policy</h1><p className="mt-2 text-slate-500">Choose where your own riders deliver and where external courier is preferred.</p></div>
+    <div><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Hybrid fulfillment</p><h1 className="mt-2 text-3xl font-black">Shipping & delivery policy</h1><p className="mt-2 text-slate-500">Choose where your own riders deliver and where external courier is preferred.</p></div>
     {message&&<p className="mt-5 rounded-2xl border bg-white p-4 text-sm font-semibold">{message}</p>}
 
     <form onSubmit={submit} className="mt-6 rounded-[1.5rem] border bg-white p-6">

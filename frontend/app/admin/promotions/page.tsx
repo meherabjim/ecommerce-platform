@@ -15,7 +15,7 @@ export default function PromotionsPage(){
  async function submit(e:FormEvent){e.preventDefault();try{await api.post('/promotions',{...f,value:Number(f.value),minOrder:Number(f.minOrder||0),maxDiscount:f.maxDiscount?Number(f.maxDiscount):undefined,usageLimit:f.usageLimit?Number(f.usageLimit):undefined,perUserLimit:Number(f.perUserLimit||1),startsAt:f.startsAt||undefined,endsAt:f.endsAt||undefined});setMsg('Campaign created successfully.');await load()}catch(e:any){setMsg(e?.response?.data?.message||'Could not create campaign.')}}
  async function toggle(id:string){await api.patch(`/promotions/${id}/toggle`);await load()}
  return <AdminShell>
-  <div className="flex flex-col gap-2"><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Growth engine</p><h1 className="text-4xl font-black">Campaigns & Promotions</h1><p className="text-sm text-slate-500">Coupons, scheduled flash sales, first-order offers, global and per-customer usage limits.</p></div>
+  <div className="flex flex-col gap-2"><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Growth engine</p><h1 className="text-3xl font-black">Campaigns & Promotions</h1><p className="text-sm text-slate-500">Coupons, scheduled flash sales, first-order offers, global and per-customer usage limits.</p></div>
   {msg&&<p className="mt-5 rounded-2xl border bg-white p-4 text-sm font-semibold">{msg}</p>}
   <form onSubmit={submit} className="mt-6 rounded-[1.7rem] border bg-white p-6">
    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

@@ -229,7 +229,7 @@ export default function LoginPage(){
         className="
         hidden
         lg:flex
-        p-12
+        p-6
         text-white
         "
       >
@@ -285,7 +285,7 @@ export default function LoginPage(){
           max-w-md
           rounded-3xl
           bg-white
-          p-8
+          p-6
           "
 
         >

@@ -49,8 +49,8 @@ export default function DeliveryDashboard(){
       </div>
     </header>
 
-    <div className="mx-auto max-w-6xl px-5 py-8">
-      <p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Rider workspace</p><h1 className="mt-2 text-4xl font-black">My deliveries</h1><p className="mt-2 text-sm text-slate-500">Navigate, call customers, collect COD and update delivery status.</p>
+    <div className="mx-auto max-w-6xl px-5 py-6">
+      <p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Rider workspace</p><h1 className="mt-2 text-3xl font-black">My deliveries</h1><p className="mt-2 text-sm text-slate-500">Navigate, call customers, collect COD and update delivery status.</p>
 
       <section className="mt-6 grid gap-3 sm:grid-cols-3">
         {[[MapPinned,'Assigned',metrics.assigned],[Navigation,'On the road',metrics.out],[Banknote,'COD outstanding',`BDT ${metrics.cod}`]].map(([Icon,label,value]:any)=><div key={label} className="rounded-2xl border border-slate-200 bg-white p-5"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#1464f4] text-white"><Icon size={17}/></span><p className="mt-4 text-2xl font-black">{value}</p><p className="mt-1 text-sm text-slate-500">{label}</p></div>)}

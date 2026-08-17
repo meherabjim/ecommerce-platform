@@ -15,7 +15,7 @@ export default function ReviewsAdmin(){
   }
   return <AdminShell>
     <p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Trust</p>
-    <h1 className="mt-2 text-4xl font-black tracking-tight">Review moderation</h1>
+    <h1 className="mt-2 text-3xl font-black tracking-tight">Review moderation</h1>
     {msg&&<p className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold">{msg}</p>}
     <section className="mt-6 space-y-4">
       {items.map(x=><div key={x.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-6">
@@ -28,7 +28,7 @@ export default function ReviewsAdmin(){
           <button onClick={()=>moderate(x.id,'REJECTED')} className="rounded-lg border border-red-200 px-4 py-2 text-xs font-bold text-red-600">REJECT</button>
         </div>
       </div>)}
-      {!items.length&&<div className="rounded-3xl border border-dashed p-12 text-center text-slate-500">No reviews yet.</div>}
+      {!items.length&&<div className="rounded-3xl border border-dashed p-6 text-center text-slate-500">No reviews yet.</div>}
     </section>
   </AdminShell>
 }

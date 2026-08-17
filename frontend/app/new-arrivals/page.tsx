@@ -37,15 +37,15 @@ export default function NewArrivalsPage(){
     <Navbar/>
 
     <section className="border-b border-[#41627f] bg-[#172b42]">
-      <div className="mx-auto max-w-7xl px-5 py-8">
+      <div className="mx-auto max-w-7xl px-5 py-6">
         <div className="relative overflow-hidden rounded-[2rem] border border-[#4c6f8f] bg-gradient-to-r from-[#1d4ed8] via-[#0369a1] to-[#0f766e] shadow-2xl">
           {heroImage&&<img src={heroImage} alt="" className="absolute right-0 top-0 h-full w-[48%] object-cover object-top opacity-35"/>}
           <div className="absolute inset-0 bg-gradient-to-r from-[#10243a]/95 via-[#173b61]/85 to-transparent"/>
-          <div className="relative z-10 max-w-2xl p-7 sm:p-10">
+          <div className="relative z-10 max-w-2xl p-7 sm:p-6">
             <span className="inline-flex items-center gap-2 rounded-full bg-[#facc15] px-3 py-2 text-[10px] font-black uppercase tracking-[.16em] text-[#172033]">
               <Sparkles size={13}/>{language==='bn'?'একদম নতুন':'Just landed'}
             </span>
-            <h1 className="mt-5 text-4xl font-black tracking-[-.04em] text-white sm:text-5xl">
+            <h1 className="mt-5 text-3xl font-black tracking-[-.04em] text-white sm:text-4xl">
               {language==='bn'?'নতুন যা এসেছে, সবার আগে দেখুন':'Fresh arrivals, before everyone else'}
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-7 text-sky-100">
@@ -79,7 +79,7 @@ export default function NewArrivalsPage(){
       </div>
     </section>
 
-    <section id="new-arrivals-grid" className="mx-auto max-w-7xl px-5 py-8">
+    <section id="new-arrivals-grid" className="mx-auto max-w-7xl px-5 py-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-[.18em] text-sky-300">{language==='bn'?'নতুন কালেকশন':'Fresh collection'}</p>
@@ -95,7 +95,7 @@ export default function NewArrivalsPage(){
         ? <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{Array.from({length:8}).map((_,i)=><div key={i} className="h-[430px] animate-pulse rounded-[1.75rem] bg-[#28435f]"/>)}</div>
         : newest.length
           ? <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{newest.map((p:any)=><StoreProductCard key={p.id} product={p} language={language} onQuickView={setQuickView}/>)}</div>
-          : <div className="mt-7 rounded-[1.75rem] border border-dashed border-[#4b6b89] bg-[#203753] p-12 text-center text-slate-300">{language==='bn'?'কোনো নতুন পণ্য পাওয়া যায়নি':'No new arrivals found.'}</div>
+          : <div className="mt-7 rounded-[1.75rem] border border-dashed border-[#4b6b89] bg-[#203753] p-6 text-center text-slate-300">{language==='bn'?'কোনো নতুন পণ্য পাওয়া যায়নি':'No new arrivals found.'}</div>
       }
     </section>
 

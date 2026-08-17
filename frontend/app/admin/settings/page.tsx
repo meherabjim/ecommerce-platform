@@ -77,7 +77,7 @@ export default function SettingsPage(){
  const box='rounded-[1.6rem] border border-slate-200 bg-white p-6';
  const input='mt-2 w-full rounded-xl border border-slate-200 p-3 font-normal';
  return <AdminShell>
-  <div><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Configuration center</p><h1 className="mt-2 text-4xl font-black">Store settings</h1><p className="mt-2 text-sm text-slate-500">Business, order, customer, SEO, footer and notification configuration in one place.</p></div>
+  <div><p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">Configuration center</p><h1 className="mt-2 text-3xl font-black">Store settings</h1><p className="mt-2 text-sm text-slate-500">Business, order, customer, SEO, footer and notification configuration in one place.</p></div>
   {message&&<p className="mt-5 rounded-xl border bg-white p-4 text-sm font-semibold">{message}</p>}
   <form onSubmit={save} className="mt-6 space-y-5">
    <section className={box}><div className="flex items-center gap-3"><Store size={19}/><h2 className="text-xl font-black">Business & storefront</h2></div><div className="mt-4 grid gap-4 md:grid-cols-2">

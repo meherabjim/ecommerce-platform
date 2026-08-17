@@ -165,9 +165,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <div className="shrink-0 border-b border-white/10 pb-5">
         <Link href="/admin" scroll={false} onClick={() => setOpen(false)} className="flex items-center gap-3">
           {storeLogo ? (
-            <img src={storeLogo} alt="" className="h-11 w-11 rounded-2xl object-cover shadow-sm" />
+            <img src={storeLogo} alt="" className="h-9 w-9 rounded-2xl object-cover shadow-sm" />
           ) : (
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 text-lg font-black text-white shadow-sm">{initial}</span>
+            <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 text-lg font-black text-white shadow-sm">{initial}</span>
           )}
           <div className="min-w-0">
             <p className="truncate font-black text-white">{storeName}</p>
@@ -179,7 +179,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-blue-600 shadow-sm">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-blue-600 shadow-sm">
               <ShieldCheck size={17} />
             </span>
             <div className="min-w-0">
@@ -219,7 +219,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               scroll={false}
               data-admin-active={active ? 'true' : 'false'}
               onClick={() => setOpen(false)}
-              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black transition ${
+              className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-black transition ${
                 active
                   ? 'bg-white text-blue-700 shadow-sm'
                   : 'text-blue-50/80 hover:bg-white/10 hover:text-white'
@@ -247,14 +247,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#dbeafe_0,_#f8fafc_34%,_#f5f3ff_100%)] text-slate-950">
-      <aside className="fixed inset-y-0 left-0 z-50 hidden h-screen w-[286px] border-r border-white/10 bg-gradient-to-b from-slate-950 via-[#102a56] to-[#123a78] p-5 shadow-2xl lg:block">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden h-screen w-[230px] border-r border-white/10 bg-gradient-to-b from-slate-950 via-[#102a56] to-[#123a78] p-5 shadow-2xl lg:block">
         {menu}
       </aside>
 
-      <div className="lg:pl-[286px]">
+      <div className="lg:pl-[230px]">
         <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-xl">
-          <div className="flex h-[72px] items-center gap-3 px-4 sm:px-5 lg:px-7">
-            <button onClick={() => setOpen(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 lg:hidden">
+          <div className="flex h-[58px] items-center gap-3 px-4 sm:px-5 lg:px-7">
+            <button onClick={() => setOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 lg:hidden">
               <Menu size={19} />
             </button>
 
@@ -270,38 +270,38 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   value={search}
                   onChange={e=>setSearch(e.target.value)}
                   placeholder={language==='bn'?'অ্যাডমিন পেজ খুঁজুন...':'Search admin modules...'}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                 />
               </div>
             </form>
 
             <div className="ml-auto flex items-center gap-2">
-              <Link href="/" target="_blank" className="hidden h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-blue-300 hover:text-blue-700 sm:inline-flex">
+              <Link href="/" target="_blank" className="hidden h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-blue-300 hover:text-blue-700 sm:inline-flex">
                 <Store size={16}/>{language==='bn'?'স্টোর দেখুন':'View store'}<ExternalLink size={13}/>
               </Link>
 
               <div className="relative">
-                <button onClick={()=>{setQuickOpen(v=>!v);setProfileOpen(false)}} className="hidden h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-3 text-xs font-black text-white shadow-sm transition hover:-translate-y-0.5 lg:inline-flex">
+                <button onClick={()=>{setQuickOpen(v=>!v);setProfileOpen(false)}} className="hidden h-9 items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-3 text-xs font-black text-white shadow-sm transition hover:-translate-y-0.5 lg:inline-flex">
                   <PackagePlus size={16}/>{language==='bn'?'কুইক অ্যাকশন':'Quick actions'}<ChevronDown size={14}/>
                 </button>
                 {quickOpen&&(
                   <div className="absolute right-0 top-13 z-50 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
-                    {(role==='SUPER_ADMIN'||role==='ADMIN'||role==='CATALOG_MANAGER')&&<Link onClick={()=>setQuickOpen(false)} href="/admin/catalog" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Boxes size={16}/>Manage products</Link>}
-                    {(role==='SUPER_ADMIN'||role==='ADMIN'||role==='ORDER_MANAGER'||role==='CUSTOMER_SUPPORT')&&<Link onClick={()=>setQuickOpen(false)} href="/admin/orders" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><ClipboardList size={16}/>Process orders</Link>}
-                    {(role==='SUPER_ADMIN'||role==='ADMIN')&&<Link onClick={()=>setQuickOpen(false)} href="/admin/users" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><UserCog size={16}/>Manage staff</Link>}
-                    {(role==='SUPER_ADMIN'||role==='ADMIN'||role==='MARKETING_MANAGER')&&<Link onClick={()=>setQuickOpen(false)} href="/admin/promotions" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Gift size={16}/>Promotions</Link>}
+                    {(role==='SUPER_ADMIN'||role==='ADMIN'||role==='CATALOG_MANAGER')&&<Link onClick={()=>setQuickOpen(false)} href="/admin/catalog" className="flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Boxes size={16}/>Manage products</Link>}
+                    {(role==='SUPER_ADMIN'||role==='ADMIN'||role==='ORDER_MANAGER'||role==='CUSTOMER_SUPPORT')&&<Link onClick={()=>setQuickOpen(false)} href="/admin/orders" className="flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><ClipboardList size={16}/>Process orders</Link>}
+                    {(role==='SUPER_ADMIN'||role==='ADMIN')&&<Link onClick={()=>setQuickOpen(false)} href="/admin/users" className="flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><UserCog size={16}/>Manage staff</Link>}
+                    {(role==='SUPER_ADMIN'||role==='ADMIN'||role==='MARKETING_MANAGER')&&<Link onClick={()=>setQuickOpen(false)} href="/admin/promotions" className="flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Gift size={16}/>Promotions</Link>}
                   </div>
                 )}
               </div>
 
               {(role==='SUPER_ADMIN'||role==='ADMIN'||role==='CUSTOMER_SUPPORT'||role==='MARKETING_MANAGER')&&(
-                <Link href="/admin/notifications" title="Notifications" className="grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
+                <Link href="/admin/notifications" title="Notifications" className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
                   <Bell size={18}/>
                 </Link>
               )}
 
               <div className="relative">
-                <button onClick={()=>{setProfileOpen(v=>!v);setQuickOpen(false)}} className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-left transition hover:border-blue-300 hover:bg-blue-50">
+                <button onClick={()=>{setProfileOpen(v=>!v);setQuickOpen(false)}} className="flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-left transition hover:border-blue-300 hover:bg-blue-50">
                   <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-900 text-xs font-black text-white">{(user?.name?.[0]||'A').toUpperCase()}</span>
                   <span className="hidden min-w-0 sm:block">
                     <span className="block max-w-[125px] truncate text-xs font-black text-slate-900">{user?.name||'Administrator'}</span>
@@ -318,12 +318,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                       <span className="mt-2 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-wide text-blue-700">{roleLabel(role||'STAFF')}</span>
                     </div>
                     <div className="p-2">
-                      <Link href="/admin/profile" onClick={()=>setProfileOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><UserRound size={16}/>My profile</Link>
-                      {(role==='SUPER_ADMIN'||role==='ADMIN')&&<Link href="/admin/security" onClick={()=>setProfileOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><ShieldCheck size={16}/>Security</Link>}
-                      {(role==='SUPER_ADMIN'||role==='ADMIN')&&<Link href="/admin/settings" onClick={()=>setProfileOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Settings2 size={16}/>Store settings</Link>}
+                      <Link href="/admin/profile" onClick={()=>setProfileOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><UserRound size={16}/>My profile</Link>
+                      {(role==='SUPER_ADMIN'||role==='ADMIN')&&<Link href="/admin/security" onClick={()=>setProfileOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><ShieldCheck size={16}/>Security</Link>}
+                      {(role==='SUPER_ADMIN'||role==='ADMIN')&&<Link href="/admin/settings" onClick={()=>setProfileOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Settings2 size={16}/>Store settings</Link>}
                     </div>
                     <div className="border-t border-slate-100 p-2">
-                      <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black text-rose-600 hover:bg-rose-50"><LogOut size={16}/>Sign out</button>
+                      <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-black text-rose-600 hover:bg-rose-50"><LogOut size={16}/>Sign out</button>
                     </div>
                   </div>
                 )}
@@ -347,9 +347,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         )}
 
         <main>
-          <div className="mx-auto max-w-[1680px] p-4 sm:p-5 md:p-7 xl:p-8">
+          <div className="mx-auto max-w-[1540px] p-3 sm:p-4 md:p-5 xl:p-5">
             {denied ? (
-              <div className="rounded-3xl border border-amber-200 bg-amber-50 p-8">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
                 <ShieldCheck className="text-amber-600"/>
                 <h1 className="mt-4 text-2xl font-black">{language==='bn'?'এই পেজে আপনার অনুমতি নেই':'Access denied'}</h1>
                 <p className="mt-2 text-sm text-slate-600">{language==='bn'?'আপনি লগইন অবস্থাতেই আছেন, কিন্তু আপনার রোলে এই পেজের অনুমতি নেই।':'You are still signed in, but your role does not have permission for this page.'}</p>
@@ -362,3 +362,5 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
+
+

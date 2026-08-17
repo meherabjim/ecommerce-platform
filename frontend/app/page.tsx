@@ -12,6 +12,8 @@ import { useI18n } from '@/lib/i18n';
 import { localizedCategoryName } from '@/lib/localized';
 
 
+
+import ContactFloatingActions from '@/components/contact-floating-actions';
 function HeroSection({
   section,cfg,language,topCats,slides,slide,heroIndex,setHeroIndex,rotationSeconds,bg,L,C
 }:any){
@@ -55,10 +57,12 @@ function HeroSection({
     setHeroIndex((i:number)=>(i+1)%slides.length);
   }
 
-  return <section className="mx-auto max-w-7xl px-5 pt-5">
-    <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
-      <aside className="home-category-panel hidden min-h-[440px] overflow-hidden rounded-[2rem] border border-[#4b6b89] bg-[#203753] shadow-xl shadow-black/20 lg:block">
-        <div className="home-category-head bg-gradient-to-r from-[#1d4ed8] via-[#2563eb] to-[#38bdf8] px-5 py-4 text-sm font-black text-white">
+  return <section className="relative mx-auto max-w-7xl px-4 pt-4 sm:px-5 sm:pt-5 lg:pr-[64px]">
+    <ContactFloatingActions />
+    
+    <div className="grid gap-4 lg:grid-cols-[200px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)]">
+      <aside className="home-category-panel hidden min-h-[340px] overflow-hidden rounded-[2rem] border border-[#4b6b89] bg-[#203753] shadow-xl shadow-black/20 lg:block">
+        <div className="home-category-head bg-gradient-to-r from-[#1d4ed8] via-[#2563eb] to-[#38bdf8] px-4 py-2.5 text-xs font-black text-white">
           ☰ {language==='bn'?'সব ক্যাটাগরি':'All categories'}
         </div>
 
@@ -67,7 +71,7 @@ function HeroSection({
               <Link
                 key={c.id}
                 href={`/shop?category=${c.id}`}
-                className="home-category-row flex items-center justify-between border-b border-[#3e5d7a] bg-[#223f5c] px-5 py-3.5 text-sm font-bold text-slate-100 transition hover:bg-[#2c5072] hover:text-yellow-300"
+                className="home-category-row flex items-center justify-between border-b border-[#3e5d7a] bg-[#223f5c] px-4 py-2.5 text-xs font-bold text-slate-100 transition hover:bg-[#2c5072] hover:text-yellow-300"
               >
                 <span>{localizedCategoryName(language,c)}</span>
                 <span>›</span>
@@ -79,7 +83,7 @@ function HeroSection({
         }
       </aside>
 
-      <div className="group relative min-h-[440px] overflow-hidden rounded-[2rem] border border-[#4b6b89] bg-gradient-to-br from-[#173f70] via-[#203753] to-[#294866] shadow-xl shadow-black/20">
+      <div className="group relative min-h-[290px] lg:min-h-[320px] overflow-hidden rounded-[2rem] border border-[#4b6b89] bg-gradient-to-br from-[#173f70] via-[#203753] to-[#294866] shadow-xl shadow-black/20">
         {bg&&<>
           <img
             key={bg}
@@ -90,24 +94,24 @@ function HeroSection({
           <div className="absolute inset-0 bg-gradient-to-r from-[#071a38]/90 via-[#123a78]/68 to-[#123a78]/18"/>
         </>}
 
-        <div className="relative z-10 flex min-h-[440px] items-center p-8 sm:p-12">
-          <div className="max-w-2xl">
+        <div className="relative z-10 flex min-h-[290px] items-center p-5 sm:p-6 lg:min-h-[320px] lg:p-6">
+          <div className="max-w-[560px]">
             <span className={`w-fit rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[.16em] ${bg?'bg-white/15 text-white backdrop-blur':'bg-[#164e63] text-sky-200'}`}>
               {eyebrow||C(cfg,'eyebrow','TODAY’S DEAL','আজকের অফার')}
             </span>
 
-            <h1 className={`mt-5 text-4xl font-black leading-[1.04] tracking-[-.04em] sm:text-6xl ${bg?'text-white':'text-white'}`}>
+            <h1 className={`mt-4 text-3xl font-black leading-[1.06] tracking-[-.035em] sm:text-3xl lg:text-3xl xl:text-4xl ${bg?'text-white':'text-white'}`}>
               {title}
             </h1>
 
-            {subtitle&&<p className={`mt-5 max-w-xl text-base leading-7 ${bg?'text-white/85':'text-slate-200'}`}>
+            {subtitle&&<p className={`mt-4 max-w-xl text-sm leading-6 sm:text-base sm:leading-7 ${bg?'text-white/85':'text-slate-200'}`}>
               {subtitle}
             </p>}
 
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-3 sm:mt-6">
               <Link
                 href={ctaUrl}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#1464f4] px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-950/10"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#1464f4] px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-blue-950/10"
               >
                 {ctaLabel}<ArrowRight size={16}/>
               </Link>
@@ -115,7 +119,7 @@ function HeroSection({
               {!slide&&cfg.secondaryCtaUrl&&
                 <Link
                   href={cfg.secondaryCtaUrl}
-                  className={`rounded-xl border px-5 py-3.5 text-sm font-black ${bg?'border-white/30 bg-white/10 text-white backdrop-blur':'border-sky-400/40 bg-[#203753] text-sky-200'}`}
+                  className={`rounded-xl border px-4 py-2.5 text-xs font-black ${bg?'border-white/30 bg-white/10 text-white backdrop-blur':'border-sky-400/40 bg-[#203753] text-sky-200'}`}
                 >
                   {C(cfg,'secondaryCtaLabel','Learn more','আরও জানুন')}
                 </Link>
@@ -315,7 +319,7 @@ export default function Home(){
 
     if(section.type==='TRUST_STRIP'){
       const items=language==='bn'?[['দ্রুত ডেলিভারি','এলাকাভিত্তিক ডেলিভারি',Truck],['নিরাপদ কেনাকাটা','সুরক্ষিত অ্যাকাউন্ট',ShieldCheck],['সহজ রিটার্ন','রিটার্ন স্ট্যাটাস দেখুন',RefreshCw],['লাইভ স্টক','ভ্যারিয়েন্টভিত্তিক স্টক',PackageCheck]]:[['Fast delivery','Zone-based shipping',Truck],['Secure shopping','Protected account',ShieldCheck],['Easy returns','Track return status',RefreshCw],['Live stock','Variant availability',PackageCheck]];
-      return <section key={section.id} className="retail-section"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{items.map(([a,b,I]:any,i:number)=><div key={a} className={`flex items-center gap-4 rounded-[1.4rem] border p-4 text-white shadow-lg shadow-black/10 ${i===0?'border-blue-400/60 bg-gradient-to-r from-[#1d4ed8] to-[#2563eb]':i===1?'border-green-400/60 bg-gradient-to-r from-[#166534] to-[#16a34a]':i===2?'border-orange-400/60 bg-gradient-to-r from-[#c2410c] to-[#f97316]':'border-violet-400/60 bg-gradient-to-r from-[#5b21b6] to-[#7c3aed]'}`}><span className="grid h-11 w-11 place-items-center rounded-full bg-black/15 text-white ring-1 ring-white/20"><I size={18}/></span><div><p className="font-black text-white">{a}</p><p className="text-xs text-white/80">{b}</p></div></div>)}</div></section>
+      return <section key={section.id} className="retail-section"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{items.map(([a,b,I]:any,i:number)=><div key={a} className={`flex items-center gap-3 rounded-[1.2rem] border p-3.5 text-white shadow-lg shadow-black/10 ${i===0?'border-blue-400/60 bg-gradient-to-r from-[#1d4ed8] to-[#2563eb]':i===1?'border-green-400/60 bg-gradient-to-r from-[#166534] to-[#16a34a]':i===2?'border-orange-400/60 bg-gradient-to-r from-[#c2410c] to-[#f97316]':'border-violet-400/60 bg-gradient-to-r from-[#5b21b6] to-[#7c3aed]'}`}><span className="grid h-11 w-11 place-items-center rounded-full bg-black/15 text-white ring-1 ring-white/20"><I size={18}/></span><div><p className="font-black text-white">{a}</p><p className="text-xs text-white/80">{b}</p></div></div>)}</div></section>
     }
     if(section.type==='CATEGORIES'){ return null; }
 
@@ -337,3 +341,5 @@ export default function Home(){
 
   return <main className="retail-canvas"><Navbar/>{sections.map(render)}<RecentlyViewedProducts language={language}/><StoreFooter/></main>
 }
+
+

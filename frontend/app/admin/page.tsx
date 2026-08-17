@@ -114,7 +114,7 @@ export default function AdminDashboard(){
     <div className="flex flex-wrap items-end justify-between gap-5">
       <div>
         <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-[10px] font-black uppercase tracking-[.18em] text-blue-700">{role.replaceAll('_',' ')||'ADMIN'} workspace</span>
-        <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950">Commerce dashboard</h1>
+        <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">Commerce dashboard</h1>
         <p className="mt-2 text-sm text-slate-500">Only data and controls permitted for your current role are loaded here.</p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -150,12 +150,12 @@ export default function AdminDashboard(){
           <div className="flex items-end justify-between gap-3"><div><h2 className="text-lg font-black">Recent orders</h2><p className="mt-1 text-xs text-slate-500">Latest transactions available to your role.</p></div><Link href="/admin/orders" className="text-xs font-black text-blue-700">View all →</Link></div>
           <div className="mt-4 space-y-2">
             {data.orders.slice(0,6).map(order=><Link key={order.id} href={`/admin/orders/${order.id}`} className="grid gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 hover:border-blue-200 hover:bg-blue-50/40 md:grid-cols-[1fr_.7fr_.6fr]"><div><p className="text-sm font-black">{order.orderNumber}</p><p className="text-[11px] text-slate-500">{order.customerName||'Customer'}</p></div><div><p className="text-[10px] uppercase text-slate-400">Status</p><p className="text-xs font-bold">{String(order.status||'').replaceAll('_',' ')}</p></div><div className="md:text-right"><p className="text-[10px] uppercase text-slate-400">Total</p><p className="text-sm font-black">BDT {order.total}</p></div></Link>)}
-            {!data.orders.length&&<div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-semibold text-slate-400">No order data available for this role.</div>}
+            {!data.orders.length&&<div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm font-semibold text-slate-400">No order data available for this role.</div>}
           </div>
         </div>
       </section>
     }
 
-    {!cards.length&&<div className="mt-7 rounded-3xl border border-slate-200 bg-white p-8"><h2 className="text-xl font-black">No operational module assigned</h2><p className="mt-2 text-sm text-slate-500">Ask a Super Admin to review this staff account role.</p></div>}
+    {!cards.length&&<div className="mt-7 rounded-3xl border border-slate-200 bg-white p-6"><h2 className="text-xl font-black">No operational module assigned</h2><p className="mt-2 text-sm text-slate-500">Ask a Super Admin to review this staff account role.</p></div>}
   </AdminShell>
 }

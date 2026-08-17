@@ -1531,3 +1531,174 @@ html,body{background:#10243a!important;color:#f8fafc}
     padding:.85rem .95rem !important;
   }
 }
+
+/* ==========================================================
+   CUSTOMER / STOREFRONT DESKTOP DENSITY V6
+   Admin intentionally untouched.
+   No CSS zoom / transform scaling.
+   ========================================================== */
+
+@media (min-width: 1280px) {
+
+  /* Stop customer/store pages becoming excessively wide */
+  .retail-canvas .max-w-7xl,
+  .customer-canvas .max-w-7xl {
+    width: calc(100% - 3rem) !important;
+    max-width: 92rem !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .retail-canvas .max-w-6xl,
+  .customer-canvas .max-w-6xl {
+    width: calc(100% - 3rem) !important;
+    max-width: 86rem !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .retail-section {
+    width: calc(100% - 3rem) !important;
+    max-width: 92rem !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* General desktop typography */
+  .retail-canvas {
+    font-size: 15px;
+  }
+
+  /* Navbar should feel compact, not enlarged */
+  .retail-canvas header button,
+  .customer-canvas header button {
+    min-height: 0;
+  }
+
+  /* Store cards */
+  .retail-canvas .retail-panel,
+  .retail-canvas .retail-panel-soft,
+  .retail-canvas .retail-product-card {
+    border-radius: 1.25rem;
+  }
+
+  /* Customer account content */
+  .customer-canvas .customer-panel,
+  .customer-canvas .customer-panel-soft,
+  .customer-canvas .customer-stat {
+    border-radius: 1.2rem;
+  }
+
+  /* Prevent huge headings on desktop */
+  .customer-canvas h1 {
+    line-height: 1.08;
+  }
+
+  /* Footer density */
+  .retail-canvas footer,
+  .customer-canvas footer {
+    font-size: 14px;
+  }
+}
+
+
+/* Laptop */
+@media (min-width: 1024px) and (max-width: 1279px) {
+
+  .retail-canvas .max-w-7xl,
+  .customer-canvas .max-w-7xl,
+  .retail-canvas .max-w-6xl,
+  .customer-canvas .max-w-6xl,
+  .retail-section {
+    width: calc(100% - 2rem) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+}
+
+
+/* Keep mobile natural */
+@media (max-width: 1023px) {
+
+  .retail-canvas,
+  .customer-canvas {
+    font-size: 16px;
+  }
+
+}
+
+
+/* ==========================================================
+   CUSTOMER / STOREFRONT TRUE SCALE V7
+   Admin is untouched.
+   ========================================================== */
+
+@media (min-width: 1280px) {
+
+  .retail-canvas,
+  .customer-canvas {
+    zoom: 0.90;
+  }
+
+}
+
+/* Medium laptop: slightly less reduction */
+@media (min-width: 1024px) and (max-width: 1279px) {
+
+  .retail-canvas,
+  .customer-canvas {
+    zoom: 0.94;
+  }
+
+}
+
+/* Tablet/mobile: natural size */
+@media (max-width: 1023px) {
+
+  .retail-canvas,
+  .customer-canvas {
+    zoom: 1;
+  }
+
+}
+
+
+/* ==========================================================
+   FINAL ACCOUNT COLOR FIX
+   Size / zoom / layout untouched
+   ========================================================== */
+
+/* Hero Continue Shopping button */
+.customer-canvas a[href="/shop"] {
+  color: #ffffff !important;
+}
+
+.customer-canvas a[href="/shop"] svg {
+  color: #ffffff !important;
+  stroke: currentColor !important;
+}
+
+/* Specifically prevent inherited dark text inside buttons/links */
+.customer-canvas a[href="/shop"] * {
+  color: inherit !important;
+}
+
+/* Remove accidental white/light icon surfaces inside account cards */
+.customer-canvas .customer-stat span[class*="bg-white"],
+.customer-canvas .customer-panel span[class*="bg-white"],
+.customer-canvas .customer-panel-soft span[class*="bg-white"] {
+  background: #173f70 !important;
+  color: #cfe4ff !important;
+}
+
+/* Bell / notification accent */
+.customer-canvas .customer-stat svg {
+  stroke: currentColor;
+}
+
+/* Do not alter sizing */
+.customer-canvas {
+  --final-account-color-fix: 1;
+}
+

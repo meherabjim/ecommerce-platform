@@ -91,7 +91,7 @@ export default function AccountShell({children}:{children:React.ReactNode}){
   const allLinks: AccountLink[] = groups.flatMap(g => g.links);
 
   return (
-    <div className="relative mx-auto max-w-7xl px-4 py-5 sm:px-5 lg:py-8">
+    <div className="relative mx-auto max-w-[1100px] px-4 py-4 sm:px-5 lg:py-5">
       <div className="mb-4 overflow-x-auto rounded-2xl border border-[#28496f] bg-[#0f223d] p-2 shadow-lg lg:hidden">
         <div className="flex min-w-max gap-2">
           {allLinks.map(([href,en,bn,Icon])=>(
@@ -109,10 +109,10 @@ export default function AccountShell({children}:{children:React.ReactNode}){
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[270px_minmax(0,1fr)]">
+      <div className="grid gap-5 lg:grid-cols-[215px_minmax(0,1fr)]">
         <aside className="hidden h-fit lg:sticky lg:top-28 lg:block">
           <div className="overflow-hidden rounded-[1.6rem] border border-[#28496f] bg-[#0f223d] shadow-[0_18px_50px_rgba(0,0,0,.28)]">
-            <div className="bg-gradient-to-br from-[#1a2b40] via-[#233b58] to-[#2f557f] p-5 text-white">
+            <div className="bg-gradient-to-br from-[#162b46] via-[#1c3858] to-[#244a70] p-3.5 text-white">
               <div className="flex items-center gap-3">
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 text-sm font-black ring-1 ring-white/20">
                   {initials}
@@ -125,7 +125,7 @@ export default function AccountShell({children}:{children:React.ReactNode}){
 
               <Link
                 href="/shop"
-                className="mt-5 flex items-center justify-between rounded-xl bg-white/12 px-3.5 py-3 text-xs font-black ring-1 ring-white/15 transition hover:bg-white/20"
+                className="mt-4 flex items-center justify-between rounded-xl bg-white/10 px-3 py-2.5 text-xs font-black ring-1 ring-white/15 transition hover:bg-white/20"
               >
                 <span className="flex items-center gap-2"><ShoppingBag size={15}/>{language==='bn'?'শপিং চালিয়ে যান':'Continue shopping'}</span>
                 <ChevronRight size={15}/>
@@ -143,7 +143,7 @@ export default function AccountShell({children}:{children:React.ReactNode}){
                       <Link
                         key={href}
                         href={href}
-                        className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-black transition ${
+                        className={`flex items-center gap-3 rounded-xl px-3 py-2 text-[12px] font-black transition ${
                           active(href)
                             ? 'bg-[#17365e] text-[#ffb44c]'
                             : 'text-slate-300 hover:bg-[#132a4a] hover:text-white'

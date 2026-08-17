@@ -114,3 +114,29 @@ coverage/
 !.env.example
 
 neuro_backup.sql
+
+# Local repair / backup files
+*.bak
+*.broken-bangla-backup
+_ui_fix/
+fix-auth-bangla.py
+fix-encoding.py
+frontend/apply_fix.py
+hero-contact-compact.py
+hero-contact-gap.py
+ui-density-fix.py
+ui-density-v2.py
+neuro_backup_bad.sql
+
+# Local repair / backup files
+*.bak
+*.broken-bangla-backup
+_ui_fix/
+fix-auth-bangla.py
+fix-encoding.py
+frontend/apply_fix.py
+hero-contact-compact.py
+hero-contact-gap.py
+ui-density-fix.py
+ui-density-v2.py
+neuro_backup_bad.sql

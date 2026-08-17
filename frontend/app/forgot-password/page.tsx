@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="grid min-h-screen place-items-center bg-[#f5f6f8] px-5">
-      <form onSubmit={submit} className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-8 premium-shadow">
+      <form onSubmit={submit} className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 premium-shadow">
         <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#1464f4] text-white"><Mail size={19}/></span>
         <p className="mt-6 text-xs font-black uppercase tracking-[.18em] text-slate-400">Account recovery</p>
         <h1 className="mt-2 text-3xl font-black">Reset your password</h1>

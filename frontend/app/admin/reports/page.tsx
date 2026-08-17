@@ -104,7 +104,7 @@ export default function ReportsPage() {
           <p className="text-xs font-black uppercase tracking-[.18em] text-slate-400">
             Business intelligence
           </p>
-          <h1 className="mt-2 text-4xl font-black tracking-tight">Reports</h1>
+          <h1 className="mt-2 text-3xl font-black tracking-tight">Reports</h1>
           <p className="mt-2 text-sm text-slate-500">
             Sales, customers, payment, inventory, delivery and return performance.
           </p>
