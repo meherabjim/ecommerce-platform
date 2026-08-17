@@ -125,7 +125,7 @@ button,a { -webkit-tap-highlight-color: transparent; }
 
 /* ==========================================================
    CUSTOMER FULL VISUAL REDESIGN V2
-   Retail/editorial system — intentionally distinct from admin
+   Retail/editorial system â€” intentionally distinct from admin
    ========================================================== */
 :root{
   --retail-ink:#101827;
@@ -333,7 +333,7 @@ body{
 
 
 /* ==========================================================
-   NEURO COMMERCE — CUSTOMER DARK PREMIUM V3.0
+   NEURO COMMERCE â€” CUSTOMER DARK PREMIUM V3.0
    Inspired by high-contrast marketplace navigation, but original branding.
    Scope: customer-facing pages only.
    ========================================================== */
@@ -556,7 +556,7 @@ body{
 
 
 /* ==========================================================
-   NEURO COMMERCE — BALANCED DARK MARKETPLACE V3.1
+   NEURO COMMERCE â€” BALANCED DARK MARKETPLACE V3.1
    Goal: no white strip, no rainbow blocks, no near-black overload.
    One coherent dark retail system across ALL customer pages.
    ========================================================== */
@@ -701,7 +701,7 @@ body{
   box-shadow:0 0 0 3px rgba(255,153,0,.15) !important;
 }
 
-/* Homepage categories — unified, not rainbow */
+/* Homepage categories â€” unified, not rainbow */
 .home-category-panel{
   background:#1b2a3d !important;
   border-color:var(--mkt-line) !important;
@@ -720,7 +720,7 @@ body{
   color:#ffb038 !important;
 }
 
-/* Trust strip — same card family, colored icon only */
+/* Trust strip â€” same card family, colored icon only */
 .trust-card-blue,
 .trust-card-green,
 .trust-card-coral,
@@ -734,7 +734,7 @@ body{
 .trust-card-coral p,
 .trust-card-violet p{color:#fff !important}
 
-/* Product cards — coherent dark slate */
+/* Product cards â€” coherent dark slate */
 .retail-product-card{
   background:#283a50 !important;
   border-color:#405774 !important;
@@ -787,7 +787,7 @@ body{
 
 
 /* ==========================================================
-   NEURO COMMERCE — COLOR FUSION MARKETPLACE V3.2
+   NEURO COMMERCE â€” COLOR FUSION MARKETPLACE V3.2
    Palette: deep navy + blue + orange + green + yellow + sky
    Rule: color is used by purpose; no invisible text/buttons.
    ========================================================== */
@@ -919,7 +919,7 @@ html,body{
   color:#fde047!important;
 }
 
-/* Trust strip — purposeful colors */
+/* Trust strip â€” purposeful colors */
 .trust-card-blue{
   background:linear-gradient(135deg,#1d4ed8,#2563eb)!important;
   border-color:#60a5fa!important;
@@ -1099,7 +1099,7 @@ html{
 }
 
 
-/* CUSTOMER CONSOLIDATED V4 — dark readable surfaces, no white flash */
+/* CUSTOMER CONSOLIDATED V4 â€” dark readable surfaces, no white flash */
 html,body{background:#10243a!important;color:#f8fafc}
 .customer-canvas,.retail-canvas{min-height:100vh;background:linear-gradient(180deg,#18314b 0%,#10243a 38%,#0d1b2a 100%)!important;color:#f8fafc!important}
 .customer-canvas .customer-panel,.customer-canvas .customer-stat,.customer-canvas article,.customer-canvas section[class*="bg-white"],.customer-canvas div[class*="bg-white"]{background:#203b58!important;border-color:#426583!important;color:#f8fafc!important}
@@ -1123,7 +1123,7 @@ html,body{background:#10243a!important;color:#f8fafc}
 
 
 /* ==========================================================
-   NEURO COMMERCE — WIDE CUSTOMER LAYOUT V4.1
+   NEURO COMMERCE â€” WIDE CUSTOMER LAYOUT V4.1
    Desktop marketplace pages use the screen properly.
    Admin is intentionally untouched.
    ========================================================== */
@@ -1192,7 +1192,7 @@ html,body{background:#10243a!important;color:#f8fafc}
 
 
 /* ==========================================================
-   CONSOLIDATED CUSTOMER V4.3 — NAV / OFFERS / PROMO / SIDEBAR
+   CONSOLIDATED CUSTOMER V4.3 â€” NAV / OFFERS / PROMO / SIDEBAR
    ========================================================== */
 .home-category-panel{
   background:#203753 !important;
@@ -1458,7 +1458,7 @@ html,body{background:#10243a!important;color:#f8fafc}
     padding:1rem 1.1rem !important;
   }
 
-  /* No cramped scrollbar for the common 1–2 address case. */
+  /* No cramped scrollbar for the common 1â€“2 address case. */
   .checkout-one-screen .checkout-address-grid{
     max-height:none !important;
     overflow:visible !important;
@@ -1521,7 +1521,7 @@ html,body{background:#10243a!important;color:#f8fafc}
   }
 }
 
-/* 1366–1599px: keep it balanced rather than forcing everything tiny. */
+/* 1366â€“1599px: keep it balanced rather than forcing everything tiny. */
 @media (min-width:1280px) and (max-width:1599px){
   .checkout-one-screen form{
     grid-template-columns:minmax(0,1fr) 390px !important;
@@ -1700,5 +1700,57 @@ html,body{background:#10243a!important;color:#f8fafc}
 /* Do not alter sizing */
 .customer-canvas {
   --final-account-color-fix: 1;
+}
+
+
+/* =========================================================
+   FINAL DESKTOP UI SCALE V7
+   Makes the whole application feel less zoomed-in
+   Browser zoom should remain at 100%
+   ========================================================= */
+
+@media (min-width: 1024px) {
+
+  html {
+    font-size: 13px !important;
+  }
+
+  body {
+    font-size: 1rem;
+  }
+
+  /* Keep main storefront comfortably centered */
+  .retail-canvas,
+  .customer-canvas {
+    width: 100%;
+  }
+
+  /* Slightly reduce giant desktop headings */
+  .retail-canvas h1,
+  .customer-canvas h1 {
+    line-height: 1.08;
+  }
+
+  /* Compact large page sections */
+  .retail-canvas section,
+  .customer-canvas section {
+    scroll-margin-top: 8rem;
+  }
+}
+
+
+/* Large desktop screens */
+@media (min-width: 1536px) {
+  html {
+    font-size: 13px !important;
+  }
+}
+
+
+/* Tablet/mobile stay normal */
+@media (max-width: 1023px) {
+  html {
+    font-size: 16px !important;
+  }
 }
 
