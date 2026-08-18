@@ -15,7 +15,7 @@ import { localizedCategoryName } from '@/lib/localized';
 
 import ContactFloatingActions from '@/components/contact-floating-actions';
 function HeroSection({
-  section,cfg,language,topCats,slides,slide,heroIndex,setHeroIndex,rotationSeconds,bg,L,C
+  section,cfg,language,topCats,slides,slide,heroIndex,setHeroIndex,rotationSeconds,bg,L,C,loading
 }:any){
   useEffect(()=>{
     if(slides.length<=1)return;
@@ -77,9 +77,18 @@ function HeroSection({
                 <span>›</span>
               </Link>
             )
-          : <div className="p-5 text-xs font-semibold text-slate-400">
-              {language==='bn'?'ক্যাটাগরি পাওয়া যায়নি':'Categories unavailable'}
-            </div>
+          : loading
+            ? <div className="space-y-2.5 p-4">
+                {[1,2,3,4,5,6].map((x)=>
+                  <div
+                    key={x}
+                    className="h-8 animate-pulse rounded-lg bg-white/10"
+                  />
+                )}
+              </div>
+            : <div className="p-5 text-xs font-semibold text-slate-400">
+                {language==='bn'?'ক্যাটাগরি পাওয়া যায়নি':'Categories unavailable'}
+              </div>
         }
       </aside>
 
@@ -95,6 +104,16 @@ function HeroSection({
         </>}
 
         <div className="relative z-10 flex min-h-[290px] items-center p-5 sm:p-6 lg:min-h-[320px] lg:p-6">
+          {loading ? (
+            <div className="w-full max-w-[560px] animate-pulse">
+              <div className="h-6 w-28 rounded-full bg-white/15" />
+              <div className="mt-5 h-9 w-[82%] rounded-xl bg-white/15" />
+              <div className="mt-3 h-9 w-[62%] rounded-xl bg-white/15" />
+              <div className="mt-5 h-4 w-[88%] rounded bg-white/10" />
+              <div className="mt-2 h-4 w-[72%] rounded bg-white/10" />
+              <div className="mt-6 h-10 w-28 rounded-xl bg-white/15" />
+            </div>
+          ) : (
           <div className="max-w-[560px]">
             <span className={`w-fit rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[.16em] ${bg?'bg-white/15 text-white backdrop-blur':'bg-[#164e63] text-sky-200'}`}>
               {eyebrow||C(cfg,'eyebrow','TODAY’S DEAL','আজকের অফার')}
@@ -126,9 +145,10 @@ function HeroSection({
               }
             </div>
           </div>
+          )}
         </div>
 
-        {slides.length>1&&<>
+        {!loading && slides.length>1&&<>
           <button
             onClick={prev}
             aria-label="Previous slide"
@@ -167,6 +187,7 @@ export default function Home(){
   const [categories,setCategories]=useState<any[]>([]);
   const [cms,setCms]=useState<any>({settings:{},sections:[],blocks:[],pages:[]});
   const [heroIndex,setHeroIndex]=useState(0);
+  const [homeLoading,setHomeLoading]=useState(true);
 
   useEffect(()=>{
     let alive=true;
@@ -188,6 +209,8 @@ export default function Home(){
       if(c.status==='fulfilled') setCategories(Array.isArray(c.value.data)?c.value.data:[]);
 
       if(m.status==='fulfilled') setCms(m.value.data||{settings:{},sections:[],blocks:[],pages:[]});
+
+      setHomeLoading(false);
     }
 
     loadHomepage();
@@ -314,6 +337,7 @@ export default function Home(){
         bg={bg}
         L={L}
         C={C}
+        loading={homeLoading}
       />
     }
 
