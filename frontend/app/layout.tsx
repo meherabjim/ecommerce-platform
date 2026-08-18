@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import BackendWarmup from '@/components/backend-warmup';
 
 import { StoreConfigProvider } from '@/components/store-config-provider';
 import { GlobalLanguageBridge, I18nProvider } from '@/lib/i18n';
@@ -37,6 +38,7 @@ export default function RootLayout({
         <I18nProvider>
           <GlobalLanguageBridge />
           <StoreConfigProvider>
+            <BackendWarmup />
             {children}
             
           </StoreConfigProvider>
